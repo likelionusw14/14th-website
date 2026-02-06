@@ -133,28 +133,58 @@ router.post('/register', async (req: Request, res: Response) => {
 
 // 3. Login (Site Login)
 router.post('/login', async (req: Request, res: Response) => {
+    // #region agent log
+    fetch('http://127.0.0.1:7243/ingest/6b883636-1481-4250-a61b-b80d8e085cc6',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'auth.routes.ts:135',message:'/login endpoint called',data:{hasStudentId:!!req.body.studentId,hasPassword:!!req.body.password},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'E'})}).catch(()=>{});
+    // #endregion
     try {
         const { studentId, password } = req.body;
 
         if (!studentId || !password) {
+            // #region agent log
+            fetch('http://127.0.0.1:7243/ingest/6b883636-1481-4250-a61b-b80d8e085cc6',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'auth.routes.ts:139',message:'Missing credentials in /login',data:{studentId:!!studentId,password:!!password},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'F'})}).catch(()=>{});
+            // #endregion
             res.status(400).json({ message: 'Missing credentials' });
             return;
         }
 
+        // #region agent log
+        fetch('http://127.0.0.1:7243/ingest/6b883636-1481-4250-a61b-b80d8e085cc6',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'auth.routes.ts:144',message:'Querying user from database',data:{studentId:studentId?.substring(0,3)+'***'},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'G'})}).catch(()=>{});
+        // #endregion
         const user = await prisma.user.findUnique({ where: { studentId } });
+        // #region agent log
+        fetch('http://127.0.0.1:7243/ingest/6b883636-1481-4250-a61b-b80d8e085cc6',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'auth.routes.ts:145',message:'User query result',data:{found:!!user,hasUser:!!user},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'G'})}).catch(()=>{});
+        // #endregion
         if (!user) {
+            // #region agent log
+            fetch('http://127.0.0.1:7243/ingest/6b883636-1481-4250-a61b-b80d8e085cc6',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'auth.routes.ts:146',message:'User not found, sending 401',data:{studentId:studentId?.substring(0,3)+'***'},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'H'})}).catch(()=>{});
+            // #endregion
             res.status(401).json({ message: 'Invalid credentials' });
             return;
         }
 
+        // #region agent log
+        fetch('http://127.0.0.1:7243/ingest/6b883636-1481-4250-a61b-b80d8e085cc6',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'auth.routes.ts:150',message:'Comparing password',data:{hasUserPassword:!!user.password},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'I'})}).catch(()=>{});
+        // #endregion
         const isMatch = await bcrypt.compare(password, user.password);
+        // #region agent log
+        fetch('http://127.0.0.1:7243/ingest/6b883636-1481-4250-a61b-b80d8e085cc6',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'auth.routes.ts:151',message:'Password comparison result',data:{isMatch},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'I'})}).catch(()=>{});
+        // #endregion
         if (!isMatch) {
+            // #region agent log
+            fetch('http://127.0.0.1:7243/ingest/6b883636-1481-4250-a61b-b80d8e085cc6',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'auth.routes.ts:152',message:'Password mismatch, sending 401',data:{isMatch},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'H'})}).catch(()=>{});
+            // #endregion
             res.status(401).json({ message: 'Invalid credentials' });
             return;
         }
 
         // Generate Session Token
+        // #region agent log
+        fetch('http://127.0.0.1:7243/ingest/6b883636-1481-4250-a61b-b80d8e085cc6',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'auth.routes.ts:156',message:'Generating JWT token',data:{userId:user.id,role:user.role,hasJwtSecret:!!JWT_SECRET},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'J'})}).catch(()=>{});
+        // #endregion
         const token = jwt.sign({ userId: user.id, role: user.role }, JWT_SECRET, { expiresIn: '7d' });
+        // #region agent log
+        fetch('http://127.0.0.1:7243/ingest/6b883636-1481-4250-a61b-b80d8e085cc6',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'auth.routes.ts:157',message:'JWT token generated, sending response',data:{hasToken:!!token,tokenLength:token.length},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'J'})}).catch(()=>{});
+        // #endregion
 
         res.json({
             success: true,
@@ -168,6 +198,9 @@ router.post('/login', async (req: Request, res: Response) => {
             }
         });
     } catch (error) {
+        // #region agent log
+        fetch('http://127.0.0.1:7243/ingest/6b883636-1481-4250-a61b-b80d8e085cc6',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'auth.routes.ts:175',message:'Exception caught in /login',data:{error:error instanceof Error?error.message:String(error),errorName:error instanceof Error?error.name:'unknown',errorStack:error instanceof Error?error.stack?.substring(0,300):'no stack'},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'E'})}).catch(()=>{});
+        // #endregion
         console.error('Login error:', error);
         res.status(500).json({ message: 'Internal server error' });
     }

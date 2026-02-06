@@ -48,10 +48,13 @@ COPY --from=backend-builder /app/server/dist /app/server/dist
 COPY --from=backend-builder /app/server/node_modules /app/server/node_modules
 COPY --from=backend-builder /app/server/package*.json /app/server/
 COPY server/prisma /app/server/prisma
+# Python 스크립트 복사 (포털 인증용)
+COPY server/temp-portal-ref /app/server/temp-portal-ref
 
 # Node.js 및 Prisma CLI 설치 (백엔드 실행용)
 # OpenSSL 라이브러리 설치 (Prisma 엔진이 필요로 함)
-RUN apk add --no-cache nodejs npm openssl libc6-compat
+# Python 설치 (포털 인증 스크립트 실행용)
+RUN apk add --no-cache nodejs npm openssl libc6-compat python3 py3-pip
 # Prisma CLI를 전역으로 설치 (런타임에서 prisma generate 실행용)
 RUN npm install -g prisma@^5.22.0
 
