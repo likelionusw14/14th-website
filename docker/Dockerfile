@@ -55,6 +55,9 @@ COPY server/temp-portal-ref /app/server/temp-portal-ref
 # OpenSSL 라이브러리 설치 (Prisma 엔진이 필요로 함)
 # Python 설치 (포털 인증 스크립트 실행용)
 RUN apk add --no-cache nodejs npm openssl libc6-compat python3 py3-pip
+# Python 의존성 설치 (포털 인증 스크립트용)
+COPY server/temp-portal-ref/backend/requirements.txt /tmp/requirements.txt
+RUN pip3 install --no-cache-dir --break-system-packages -r /tmp/requirements.txt
 # Prisma CLI를 전역으로 설치 (런타임에서 prisma generate 실행용)
 RUN npm install -g prisma@^5.22.0
 

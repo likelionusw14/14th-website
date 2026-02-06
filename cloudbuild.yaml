@@ -43,7 +43,9 @@ steps:
       - '--max-instances'
       - '10'
       - '--set-env-vars'
-      - 'NODE_ENV=production'
+      - 'NODE_ENV=production,DATABASE_URL=postgresql://postgres:suwonUniv1982%21@localhost/likelion_usw?host=/cloudsql/zinc-involution-486602-v0:asia-northeast3:likelion-usw-db,JWT_SECRET=ajlkjwoeofikasjeoifej'
+      - '--add-cloudsql-instances'
+      - 'zinc-involution-486602-v0:asia-northeast3:likelion-usw-db'
       - '--project'
       - '$PROJECT_ID'
 
