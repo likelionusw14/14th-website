@@ -7,6 +7,7 @@ yarn-error.log*
 pnpm-debug.log*
 lerna-debug.log*
 
+# Dependencies
 node_modules
 dist
 dist-ssr
@@ -17,6 +18,7 @@ dist-ssr
 .env.local
 .env.production
 .env.development
+.env.*.local
 
 # Editor directories and files
 .vscode/*
@@ -43,5 +45,19 @@ __pycache__/
 *.py[cod]
 *$py.class
 
-# Readme
+# Docker build artifacts
+*.tar
+*.tar.gz
+docker/*.tar
+docker/*.tar.gz
+
+# Documentation (private)
 READMENotPublic.md
+
+# Scripts (local only)
+start-proxy.ps1
+cloud-sql-proxy.exe
+
+docs/*
+docs
+scripts

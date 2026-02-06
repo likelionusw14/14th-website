@@ -156,7 +156,7 @@ router.get('/all', authenticateToken, requireAdmin, async (req: Request, res: Re
 
         res.json({
             success: true,
-            applications: applications.map(app => ({
+            applications: applications.map((app: any) => ({
                 id: app.id,
                 track: app.track,
                 content: app.content,

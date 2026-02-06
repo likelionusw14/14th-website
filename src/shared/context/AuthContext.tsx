@@ -20,7 +20,12 @@ interface AuthContextType {
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
-export const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:4000';
+// 프로덕션에서는 nginx 프록시를 통해 상대 경로 사용, 개발 환경에서는 localhost 사용
+// VITE_API_URL이 명시적으로 설정되지 않은 경우:
+// - 개발 환경: http://localhost:4000 사용
+// - 프로덕션: 빈 문자열로 상대 경로 사용 (nginx 프록시 활용)
+export const API_BASE_URL = import.meta.env.VITE_API_URL || 
+    (import.meta.env.MODE === 'development' ? 'http://localhost:4000' : '');
 
 export const AuthProvider = ({ children }: { children: ReactNode }) => {
     const [user, setUser] = useState<User | null>(null);

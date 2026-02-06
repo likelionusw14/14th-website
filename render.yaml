@@ -1,0 +1,27 @@
+services:
+  # 통합 웹 서비스 (프론트엔드 + 백엔드)
+  - type: web
+    name: likelion-unified
+    runtime: docker
+    dockerfilePath: ./docker/Dockerfile
+    dockerContext: .
+    plan: free # 또는 free, starter, standard 등
+    healthCheckPath: /health
+    envVars:
+      # Render가 자동으로 설정하는 변수들
+      - key: PORT
+        sync: false  # Render가 자동으로 설정
+      - key: NODE_ENV
+        value: production
+      
+      # 필수 환경 변수 (Render 대시보드에서 설정 필요)
+      - key: DATABASE_URL
+        sync: false  # Render PostgreSQL 서비스 URL 또는 외부 DB URL
+      - key: JWT_SECRET
+        generateValue: true  # 자동 생성 또는 수동 설정
+      - key: FRONTEND_URL
+        sync: false  # 배포 후 Render에서 제공하는 URL로 설정
+      
+      # 선택적 환경 변수
+      - key: VERCEL_URL
+        sync: false  # Vercel과 연동 시 사용

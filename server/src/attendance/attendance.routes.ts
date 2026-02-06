@@ -174,7 +174,7 @@ router.get('/sessions', authenticateToken, requireAdmin, async (req: Request, re
 
         res.json({
             success: true,
-            sessions: sessions.map(session => ({
+            sessions: sessions.map((session: any) => ({
                 id: session.id,
                 code: session.code,
                 description: session.description,
@@ -185,7 +185,7 @@ router.get('/sessions', authenticateToken, requireAdmin, async (req: Request, re
                     name: session.creator.name,
                     studentId: session.creator.studentId
                 } : null,
-                attendances: session.attendances.map(att => ({
+                attendances: session.attendances.map((att: any) => ({
                     id: att.id,
                     status: att.status,
                     timestamp: att.timestamp,
@@ -220,7 +220,7 @@ router.get('/sessions/active', authenticateToken, requireBabyLion, async (req: R
 
         res.json({
             success: true,
-            sessions: sessions.map(session => ({
+            sessions: sessions.map((session: any) => ({
                 id: session.id,
                 code: session.code,
                 description: session.description,
@@ -328,7 +328,7 @@ router.get('/my', authenticateToken, requireBabyLion, async (req: Request, res: 
 
         res.json({
             success: true,
-            attendances: attendances.map(att => ({
+            attendances: attendances.map((att: any) => ({
                 id: att.id,
                 status: att.status,
                 timestamp: att.timestamp,
@@ -458,7 +458,7 @@ router.get('/sessions/:id/export', authenticateToken, requireAdmin, async (req: 
         }
 
         // Prepare data for Excel
-        const excelData = session.attendances.map((att, index) => ({
+        const excelData = session.attendances.map((att: any, index: number) => ({
             '번호': index + 1,
             '학번': att.user.studentId,
             '이름': att.user.name || '',

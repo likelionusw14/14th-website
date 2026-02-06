@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { motion } from 'framer-motion';
 import { useForm } from 'react-hook-form';
-import { API_BASE_URL } from '../../shared/context/AuthContext';
+import { API_BASE_URL } from '../../../shared/context/AuthContext';
 
 interface RegisterFormProps {
     studentId: string;
