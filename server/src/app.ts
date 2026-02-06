@@ -37,6 +37,15 @@ app.use(cors({
 }));
 app.use(express.json());
 
+// 전역 에러 핸들러 추가
+app.use((err: Error, req: express.Request, res: express.Response, next: express.NextFunction) => {
+    console.error('Unhandled error:', err);
+    // #region agent log
+    fetch('http://127.0.0.1:7243/ingest/6b883636-1481-4250-a61b-b80d8e085cc6',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'app.ts:42',message:'Unhandled error caught',data:{error:err.message,errorName:err.name,stack:err.stack?.substring(0,200)},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'M'})}).catch(()=>{});
+    // #endregion
+    res.status(500).json({ error: 'Internal server error', message: err.message });
+});
+
 // Routes
 app.use('/api/auth', authRoutes);
 app.use('/api/application', applicationRoutes);

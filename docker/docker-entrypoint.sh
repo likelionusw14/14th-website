@@ -19,8 +19,13 @@ npx prisma generate || {
 }
 
 # 백엔드를 백그라운드에서 실행하고 출력을 로그 파일로 리다이렉트
+# stdout과 stderr를 모두 로그 파일로 리다이렉트하고, 실시간으로도 출력
 PORT=4000 node dist/app.js > /tmp/backend.log 2>&1 &
 BACKEND_PID=$!
+
+# 백엔드 로그를 실시간으로 모니터링하는 백그라운드 프로세스 시작
+tail -f /tmp/backend.log &
+TAIL_PID=$!
 
 # 백엔드가 시작될 때까지 대기 (최대 30초)
 echo "Waiting for backend to start..."
