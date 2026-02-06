@@ -38,8 +38,8 @@ app.use(cors({
             return;
         }
         
-        // 프로덕션 환경에서 Cloud Run URL 패턴 허용 (*.run.app)
-        if (process.env.NODE_ENV === 'production' && origin.includes('.run.app')) {
+        // Cloud Run URL 패턴 허용 (*.run.app) - NODE_ENV와 관계없이 항상 허용
+        if (origin.includes('.run.app')) {
             callback(null, true);
             return;
         }
