@@ -11,6 +11,8 @@ RUN npm ci
 
 # 백엔드 소스 코드 복사 및 빌드
 COPY server/ ./
+# Prisma Client 생성 (빌드 전에 필요)
+RUN npx prisma generate
 RUN npm run build
 
 # ========== 프론트엔드 빌드 스테이지 ==========

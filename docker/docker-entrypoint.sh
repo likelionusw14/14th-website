@@ -7,18 +7,45 @@ PORT=${PORT:-80}
 # nginx 설정에서 포트를 동적으로 변경
 sed -i "s/listen 80;/listen ${PORT};/g" /etc/nginx/conf.d/default.conf
 
-# 백엔드를 백그라운드에서 실행
+# 백엔드 시작
+echo "Starting backend server..."
 cd /app/server
-PORT=4000 node dist/app.js &
+
+# 백엔드를 백그라운드에서 실행하고 출력을 로그 파일로 리다이렉트
+PORT=4000 node dist/app.js > /tmp/backend.log 2>&1 &
 BACKEND_PID=$!
 
-# 백엔드가 시작될 때까지 대기
+# 백엔드가 시작될 때까지 대기 (최대 30초)
 echo "Waiting for backend to start..."
-sleep 3
+MAX_ATTEMPTS=30
+ATTEMPT=0
+BACKEND_READY=false
 
-# 백엔드 헬스체크
-if ! wget --no-verbose --tries=1 --spider http://localhost:4000/ 2>/dev/null; then
-    echo "Warning: Backend health check failed, but continuing..."
+while [ $ATTEMPT -lt $MAX_ATTEMPTS ]; do
+    # 백엔드 프로세스가 여전히 실행 중인지 확인
+    if ! kill -0 $BACKEND_PID 2>/dev/null; then
+        echo "ERROR: Backend process died!"
+        echo "Backend logs:"
+        cat /tmp/backend.log || true
+        exit 1
+    fi
+    
+    # Node.js를 사용하여 백엔드 헬스체크 (가장 확실한 방법)
+    if node -e "require('http').get('http://localhost:4000/', (r) => { process.exit(r.statusCode === 200 ? 0 : 1); }).on('error', () => process.exit(1));" 2>/dev/null; then
+        echo "Backend is ready!"
+        BACKEND_READY=true
+        break
+    fi
+    
+    ATTEMPT=$((ATTEMPT + 1))
+    sleep 1
+done
+
+if [ "$BACKEND_READY" = false ]; then
+    echo "ERROR: Backend failed to start within 30 seconds"
+    echo "Backend logs:"
+    cat /tmp/backend.log || true
+    exit 1
 fi
 
 # nginx를 포그라운드에서 실행
