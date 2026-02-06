@@ -14,15 +14,27 @@ const JWT_SECRET = process.env.JWT_SECRET || 'secret';
 
 // 1. Verify Portal (Pre-registration check)
 router.post('/verify', async (req: Request, res: Response) => {
+    // #region agent log
+    fetch('http://127.0.0.1:7243/ingest/6b883636-1481-4250-a61b-b80d8e085cc6',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'auth.routes.ts:16',message:'/verify endpoint called',data:{hasStudentId:!!req.body.studentId,hasPortalPassword:!!req.body.portalPassword},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'A'})}).catch(()=>{});
+    // #endregion
     try {
         const { studentId, portalPassword } = req.body;
 
         if (!studentId || !portalPassword) {
+            // #region agent log
+            fetch('http://127.0.0.1:7243/ingest/6b883636-1481-4250-a61b-b80d8e085cc6',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'auth.routes.ts:20',message:'Missing credentials',data:{studentId:!!studentId,portalPassword:!!portalPassword},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'B'})}).catch(()=>{});
+            // #endregion
             res.status(400).json({ message: 'Missing credentials' });
             return;
         }
 
+        // #region agent log
+        fetch('http://127.0.0.1:7243/ingest/6b883636-1481-4250-a61b-b80d8e085cc6',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'auth.routes.ts:25',message:'Calling verifyPortalCredentials',data:{studentId:studentId?.substring(0,3)+'***'},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'C'})}).catch(()=>{});
+        // #endregion
         const portalData = await verifyPortalCredentials(studentId, portalPassword);
+        // #region agent log
+        fetch('http://127.0.0.1:7243/ingest/6b883636-1481-4250-a61b-b80d8e085cc6',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'auth.routes.ts:26',message:'verifyPortalCredentials returned',data:{verified:portalData.verified,hasName:!!portalData.name,hasMajor:!!portalData.major},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'C'})}).catch(()=>{});
+        // #endregion
 
         if (portalData.verified) {
             // Embed name and major in the token to prevent tampering on client side
@@ -33,6 +45,9 @@ router.post('/verify', async (req: Request, res: Response) => {
                 major: portalData.major
             }, JWT_SECRET, { expiresIn: '10m' });
 
+            // #region agent log
+            fetch('http://127.0.0.1:7243/ingest/6b883636-1481-4250-a61b-b80d8e085cc6',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'auth.routes.ts:42',message:'Verification successful, sending response',data:{hasToken:!!verificationToken},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'D'})}).catch(()=>{});
+            // #endregion
             res.json({
                 success: true,
                 verificationToken,
@@ -40,9 +55,15 @@ router.post('/verify', async (req: Request, res: Response) => {
                 major: portalData.major
             });
         } else {
+            // #region agent log
+            fetch('http://127.0.0.1:7243/ingest/6b883636-1481-4250-a61b-b80d8e085cc6',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'auth.routes.ts:43',message:'Verification failed, sending 401',data:{verified:portalData.verified},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'D'})}).catch(()=>{});
+            // #endregion
             res.status(401).json({ success: false, message: 'Invalid portal credentials' });
         }
     } catch (error) {
+        // #region agent log
+        fetch('http://127.0.0.1:7243/ingest/6b883636-1481-4250-a61b-b80d8e085cc6',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'auth.routes.ts:45',message:'Exception caught in /verify',data:{error:error instanceof Error?error.message:String(error),errorName:error instanceof Error?error.name:'unknown'},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'A'})}).catch(()=>{});
+        // #endregion
         console.error('Verify error:', error);
         res.status(500).json({ success: false, message: 'Internal server error' });
     }
