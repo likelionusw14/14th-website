@@ -89,6 +89,10 @@ const LoginForm = ({ onRegisterClick }: { onRegisterClick: () => void }) => {
             <div className="text-center mt-4 text-sm text-slate-400">
                 계정이 없으신가요? <button type="button" onClick={onRegisterClick} className="text-comet-blue hover:underline">회원가입 (포털인증)</button>
             </div>
+
+            <div className="text-center mt-4 text-sm text-slate-400">
+                <button type="button" onClick={() => navigate('/')} className="text-comet-blue hover:underline">홈으로 돌아가기</button>
+            </div>
         </motion.form>
     );
 };
