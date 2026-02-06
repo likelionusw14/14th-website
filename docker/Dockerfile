@@ -46,8 +46,10 @@ COPY --from=backend-builder /app/server/node_modules /app/server/node_modules
 COPY --from=backend-builder /app/server/package*.json /app/server/
 COPY server/prisma /app/server/prisma
 
-# Node.js 설치 (백엔드 실행용)
+# Node.js 및 Prisma CLI 설치 (백엔드 실행용)
 RUN apk add --no-cache nodejs npm
+# Prisma CLI를 전역으로 설치 (런타임에서 prisma generate 실행용)
+RUN npm install -g prisma@^5.22.0
 
 # 포트 노출 (Render는 동적 PORT 사용)
 EXPOSE 80

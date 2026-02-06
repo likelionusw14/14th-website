@@ -11,6 +11,13 @@ sed -i "s/listen 80;/listen ${PORT};/g" /etc/nginx/conf.d/default.conf
 echo "Starting backend server..."
 cd /app/server
 
+# Prisma Client 생성 (런타임에서도 필요)
+echo "Generating Prisma Client..."
+npx prisma generate || {
+    echo "ERROR: Failed to generate Prisma Client"
+    exit 1
+}
+
 # 백엔드를 백그라운드에서 실행하고 출력을 로그 파일로 리다이렉트
 PORT=4000 node dist/app.js > /tmp/backend.log 2>&1 &
 BACKEND_PID=$!
