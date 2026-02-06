@@ -10,6 +10,8 @@ steps:
       - 'docker/Dockerfile'
       - '-t'
       - 'gcr.io/$PROJECT_ID/likelion-unified:latest'
+      - '--build-arg'
+      - 'DATABASE_URL=postgresql://dummy:dummy@localhost:5432/dummy'
       - '.'
 
   # 이미지를 Container Registry에 푸시

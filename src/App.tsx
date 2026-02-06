@@ -4,6 +4,8 @@ import Layout from './shared/ui/Layout';
 import LandingPage from './features/home/LandingPage';
 import LoginPage from './features/auth/login/LoginPage';
 import ApplicationPage from './features/application/ApplicationPage';
+import ResultPage from './features/application/ResultPage';
+import InterviewSchedulePage from './features/application/InterviewSchedulePage';
 import AttendancePage from './features/attendance/AttendancePage';
 import AdminPage from './features/admin/AdminPage';
 import ProjectPage from './features/project/ProjectPage';
@@ -43,14 +45,9 @@ function App() {
             <Route path="/project" element={<ProjectPage />} />
             <Route path="/terms" element={<TermsPage />} />
             <Route path="/privacy" element={<PrivacyPage />} />
-            <Route 
-              path="/application" 
-              element={
-                <ProtectedRoute>
-                  <ApplicationPage />
-                </ProtectedRoute>
-              } 
-            />
+            <Route path="/result" element={<ResultPage />} />
+            <Route path="/interview-schedule" element={<InterviewSchedulePage />} />
+            <Route path="/application" element={<ApplicationPage />} />
             <Route 
               path="/attendance" 
               element={

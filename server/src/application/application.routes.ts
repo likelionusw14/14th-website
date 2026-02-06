@@ -1,6 +1,8 @@
 import { Router, Request, Response } from 'express';
 import { PrismaClient } from '@prisma/client';
 import jwt from 'jsonwebtoken';
+import bcrypt from 'bcrypt';
+import { fetchGoogleFormResponses, parseFormResponse } from '../utils/googleSheets';
 
 const router = Router();
 const prisma = new PrismaClient();
@@ -45,7 +47,7 @@ router.post('/submit', authenticateToken, async (req: Request, res: Response) =>
             return;
         }
 
-        if (!['FRONTEND', 'BACKEND'].includes(track)) {
+        if (!['FRONTEND', 'BACKEND', 'DESIGN', 'PM'].includes(track)) {
             res.status(400).json({ message: 'Invalid track' });
             return;
         }
@@ -161,6 +163,10 @@ router.get('/all', authenticateToken, requireAdmin, async (req: Request, res: Re
                 track: app.track,
                 content: app.content,
                 status: app.status,
+                phoneLastDigits: app.phoneLastDigits,
+                interviewPreferences: app.interviewPreferences ? JSON.parse(app.interviewPreferences) : null,
+                confirmedInterviewDate: app.confirmedInterviewDate,
+                confirmedInterviewTime: app.confirmedInterviewTime,
                 createdAt: app.createdAt,
                 user: app.user
             }))
@@ -171,13 +177,13 @@ router.get('/all', authenticateToken, requireAdmin, async (req: Request, res: Re
     }
 });
 
-// 4. Approve/Reject Application (Admin)
+// 4. Update Application Status (Admin) - 서류합격/최종합격/거절
 router.patch('/:id/status', authenticateToken, requireAdmin, async (req: Request, res: Response) => {
     try {
         const applicationId = parseInt(Array.isArray(req.params.id) ? req.params.id[0] : req.params.id);
         const { status } = req.body;
 
-        if (!['APPROVED', 'REJECTED'].includes(status)) {
+        if (!['DOCUMENT_APPROVED', 'INTERVIEW_APPROVED', 'REJECTED'].includes(status)) {
             res.status(400).json({ message: 'Invalid status' });
             return;
         }
@@ -208,8 +214,9 @@ router.patch('/:id/status', authenticateToken, requireAdmin, async (req: Request
             }
         });
 
-        // If approved, update user role to BABY_LION
-        if (status === 'APPROVED') {
+        // 최종합격 시에만 BABY_LION으로 변경
+        // 계정은 지원서 생성 시 이미 생성되므로, 역할만 변경
+        if (status === 'INTERVIEW_APPROVED') {
             await prisma.user.update({
                 where: { id: application.userId },
                 data: { role: 'BABY_LION' }
@@ -228,6 +235,479 @@ router.patch('/:id/status', authenticateToken, requireAdmin, async (req: Request
     } catch (error) {
         console.error('Update application status error:', error);
         res.status(500).json({ message: 'Internal server error' });
+    }
+});
+
+// 5. Get Result by Student Info (Public - No Auth Required)
+router.post('/result', async (req: Request, res: Response) => {
+    try {
+        const { studentId, name, phoneLastDigits } = req.body;
+
+        if (!studentId || !name || !phoneLastDigits) {
+            res.status(400).json({ message: '학번, 이름, 전화번호 뒷자리를 모두 입력해주세요' });
+            return;
+        }
+
+        // Check if result is open
+        const settings = await prisma.applicationSettings.findFirst({
+            orderBy: { createdAt: 'desc' }
+        });
+
+        if (!settings || new Date() < settings.resultOpenDate) {
+            res.status(403).json({ 
+                message: '결과 공개일이 아닙니다',
+                resultOpenDate: settings?.resultOpenDate || null
+            });
+            return;
+        }
+
+        // Find application
+        const user = await prisma.user.findUnique({
+            where: { studentId },
+            include: {
+                application: true
+            }
+        });
+
+        if (!user || !user.application) {
+            res.status(404).json({ message: '지원서를 찾을 수 없습니다' });
+            return;
+        }
+
+        // Verify name and phone last digits
+        if (user.name !== name || user.application.phoneLastDigits !== phoneLastDigits) {
+            res.status(401).json({ message: '정보가 일치하지 않습니다' });
+            return;
+        }
+
+        res.json({
+            success: true,
+            result: {
+                status: user.application.status,
+                track: user.application.track,
+                interviewPreferences: user.application.interviewPreferences ? JSON.parse(user.application.interviewPreferences) : null,
+                confirmedInterviewDate: user.application.confirmedInterviewDate,
+                confirmedInterviewTime: user.application.confirmedInterviewTime
+            }
+        });
+    } catch (error) {
+        console.error('Get result error:', error);
+        res.status(500).json({ message: 'Internal server error' });
+    }
+});
+
+// 6. Submit Interview Preferences (Approved Applicants)
+router.post('/interview-preferences', async (req: Request, res: Response) => {
+    try {
+        const { studentId, name, phoneLastDigits, times } = req.body;
+
+        if (!studentId || !name || !phoneLastDigits || !times || !Array.isArray(times) || times.length !== 3) {
+            res.status(400).json({ message: '모든 정보를 올바르게 입력해주세요' });
+            return;
+        }
+
+        // Validate dates and times
+        const validDates = ['2024-02-23', '2024-02-24', '2024-02-25'];
+        const validTimes = [];
+        for (let hour = 13; hour <= 15; hour++) {
+            validTimes.push(`${hour.toString().padStart(2, '0')}:00`);
+            validTimes.push(`${hour.toString().padStart(2, '0')}:30`);
+        }
+        validTimes.push('16:00');
+
+        for (const timeObj of times) {
+            if (!timeObj.priority || !timeObj.date || !timeObj.time) {
+                res.status(400).json({ message: '각 순위마다 날짜와 시간을 모두 선택해주세요' });
+                return;
+            }
+            if (!validDates.includes(timeObj.date)) {
+                res.status(400).json({ message: '날짜는 2월 23일, 24일, 25일 중 하나여야 합니다' });
+                return;
+            }
+            if (!validTimes.includes(timeObj.time)) {
+                res.status(400).json({ message: '시간은 13:00부터 16:00까지 30분 간격으로 선택해주세요' });
+                return;
+            }
+        }
+
+        // Check priorities (must be 1, 2, 3)
+        const priorities = times.map((t: any) => t.priority).sort();
+        if (JSON.stringify(priorities) !== JSON.stringify([1, 2, 3])) {
+            res.status(400).json({ message: '우선순위는 1, 2, 3이어야 합니다' });
+            return;
+        }
+
+        // Find user and application
+        const user = await prisma.user.findUnique({
+            where: { studentId },
+            include: { application: true }
+        });
+
+        if (!user || !user.application) {
+            res.status(404).json({ message: '지원서를 찾을 수 없습니다' });
+            return;
+        }
+
+        // Verify name and phone
+        if (user.name !== name || user.application.phoneLastDigits !== phoneLastDigits) {
+            res.status(401).json({ message: '정보가 일치하지 않습니다' });
+            return;
+        }
+
+        // Check if document approved (서류합격한 지원자만 면접 일정 선택 가능)
+        if (user.application.status !== 'DOCUMENT_APPROVED') {
+            res.status(403).json({ message: '서류합격한 지원자만 면접 일정을 선택할 수 있습니다' });
+            return;
+        }
+
+        // Update application with interview preferences
+        await prisma.application.update({
+            where: { id: user.application.id },
+            data: {
+                phoneLastDigits,
+                interviewPreferences: JSON.stringify({ times })
+            }
+        });
+
+        res.json({
+            success: true,
+            message: '면접 일정이 제출되었습니다'
+        });
+    } catch (error) {
+        console.error('Submit interview preferences error:', error);
+        res.status(500).json({ message: 'Internal server error' });
+    }
+});
+
+// 7. Confirm Interview Schedule (Admin)
+router.patch('/:id/interview-confirm', authenticateToken, requireAdmin, async (req: Request, res: Response) => {
+    try {
+        const applicationId = parseInt(Array.isArray(req.params.id) ? req.params.id[0] : req.params.id);
+        const { date, time } = req.body;
+
+        if (!date || !time) {
+            res.status(400).json({ message: '날짜와 시간을 입력해주세요' });
+            return;
+        }
+
+        const application = await prisma.application.findUnique({
+            where: { id: applicationId }
+        });
+
+        if (!application) {
+            res.status(404).json({ message: 'Application not found' });
+            return;
+        }
+
+        const confirmedDate = new Date(date + 'T' + time + ':00');
+
+        const updatedApplication = await prisma.application.update({
+            where: { id: applicationId },
+            data: {
+                confirmedInterviewDate: confirmedDate,
+                confirmedInterviewTime: time
+            },
+            include: {
+                user: true
+            }
+        });
+
+        // 면접 일정 확정은 별도로 처리 (최종합격은 관리자가 별도로 처리)
+
+        res.json({
+            success: true,
+            application: {
+                ...updatedApplication,
+                user: {
+                    id: updatedApplication.user.id,
+                    studentId: updatedApplication.user.studentId,
+                    name: updatedApplication.user.name,
+                    major: updatedApplication.user.major
+                }
+            }
+        });
+    } catch (error) {
+        console.error('Confirm interview error:', error);
+        res.status(500).json({ message: 'Internal server error' });
+    }
+});
+
+// 8. Get/Set Result Open Date (Admin)
+router.get('/settings', authenticateToken, requireAdmin, async (req: Request, res: Response) => {
+    try {
+        const settings = await prisma.applicationSettings.findFirst({
+            orderBy: { createdAt: 'desc' }
+        });
+
+        res.json({
+            success: true,
+            settings: settings || null
+        });
+    } catch (error) {
+        console.error('Get settings error:', error);
+        res.status(500).json({ message: 'Internal server error' });
+    }
+});
+
+router.post('/settings', authenticateToken, requireAdmin, async (req: Request, res: Response) => {
+    try {
+        const { resultOpenDate, googleFormUrl } = req.body;
+
+        // Get or create settings
+        const existingSettings = await prisma.applicationSettings.findFirst({
+            orderBy: { createdAt: 'desc' }
+        });
+
+        const updateData: any = {};
+        
+        if (resultOpenDate) {
+            const date = new Date(resultOpenDate);
+            if (isNaN(date.getTime())) {
+                res.status(400).json({ message: '올바른 날짜 형식이 아닙니다' });
+                return;
+            }
+            updateData.resultOpenDate = date;
+        }
+
+        if (googleFormUrl !== undefined) {
+            updateData.googleFormUrl = googleFormUrl || null;
+        }
+
+        let settings;
+        if (existingSettings) {
+            settings = await prisma.applicationSettings.update({
+                where: { id: existingSettings.id },
+                data: updateData
+            });
+        } else {
+            if (!resultOpenDate) {
+                res.status(400).json({ message: '결과 공개일을 입력해주세요' });
+                return;
+            }
+            settings = await prisma.applicationSettings.create({
+                data: {
+                    resultOpenDate: new Date(resultOpenDate),
+                    googleFormUrl: googleFormUrl || null
+                }
+            });
+        }
+
+        res.json({
+            success: true,
+            settings
+        });
+    } catch (error) {
+        console.error('Set settings error:', error);
+        res.status(500).json({ message: 'Internal server error' });
+    }
+});
+
+// 8-1. Get Google Form URL (Public - No Auth Required)
+router.get('/google-form-url', async (req: Request, res: Response) => {
+    try {
+        const settings = await prisma.applicationSettings.findFirst({
+            orderBy: { createdAt: 'desc' }
+        });
+
+        res.json({
+            success: true,
+            googleFormUrl: settings?.googleFormUrl || null
+        });
+    } catch (error) {
+        console.error('Get google form URL error:', error);
+        res.status(500).json({ message: 'Internal server error' });
+    }
+});
+
+// 9. Create Application Manually (Admin)
+router.post('/create', authenticateToken, requireAdmin, async (req: Request, res: Response) => {
+    try {
+        const { studentId, name, phoneLastDigits, track, content } = req.body;
+
+        if (!studentId || !name || !phoneLastDigits || !track) {
+            res.status(400).json({ message: '학번, 이름, 전화번호 뒷자리, 트랙을 모두 입력해주세요' });
+            return;
+        }
+
+        if (!['FRONTEND', 'BACKEND', 'DESIGN', 'PM'].includes(track)) {
+            res.status(400).json({ message: '올바른 트랙을 선택해주세요' });
+            return;
+        }
+
+        // 전화번호 뒷자리 검증 (4자리)
+        if (!/^\d{4}$/.test(phoneLastDigits)) {
+            res.status(400).json({ message: '전화번호 뒷자리는 4자리 숫자여야 합니다' });
+            return;
+        }
+
+        // 사용자 찾기 또는 생성
+        let user = await prisma.user.findUnique({
+            where: { studentId }
+        });
+
+        if (!user) {
+            // 사용자가 없으면 생성 (임시 비밀번호: 학번)
+            const hashedPassword = await bcrypt.hash(studentId, 10);
+            user = await prisma.user.create({
+                data: {
+                    studentId,
+                    password: hashedPassword,
+                    name,
+                    role: 'GUEST'
+                }
+            });
+        } else {
+            // 사용자가 있으면 이름 업데이트
+            await prisma.user.update({
+                where: { id: user.id },
+                data: { name }
+            });
+        }
+
+        // 이미 지원서가 있는지 확인
+        const existingApp = await prisma.application.findUnique({
+            where: { userId: user.id }
+        });
+
+        if (existingApp) {
+            res.status(409).json({ message: '이미 지원서가 존재합니다' });
+            return;
+        }
+
+        // 지원서 생성
+        const application = await prisma.application.create({
+            data: {
+                userId: user.id,
+                track,
+                content: content || '구글폼 제출',
+                phoneLastDigits,
+                status: 'PENDING'
+            },
+            include: {
+                user: {
+                    select: {
+                        id: true,
+                        studentId: true,
+                        name: true,
+                        major: true
+                    }
+                }
+            }
+        });
+
+        res.json({
+            success: true,
+            application: {
+                id: application.id,
+                track: application.track,
+                status: application.status,
+                user: application.user
+            }
+        });
+    } catch (error) {
+        console.error('Create application error:', error);
+        res.status(500).json({ message: 'Internal server error' });
+    }
+});
+
+// 10. Import Applications from Google Form (Admin)
+router.post('/import-from-google-form', authenticateToken, requireAdmin, async (req: Request, res: Response) => {
+    try {
+        const { spreadsheetId, sheetName } = req.body;
+
+        if (!spreadsheetId) {
+            res.status(400).json({ message: '구글 시트 ID를 입력해주세요' });
+            return;
+        }
+
+        // 구글 시트에서 데이터 가져오기
+        const range = sheetName ? `${sheetName}!A:Z` : 'A:Z';
+        const rows = await fetchGoogleFormResponses(spreadsheetId, range);
+
+        if (rows.length < 2) {
+            res.status(400).json({ message: '시트에 데이터가 없습니다' });
+            return;
+        }
+
+        // 첫 번째 행은 헤더
+        const headers = rows[0];
+        const dataRows = rows.slice(1);
+
+        const results = {
+            imported: 0,
+            skipped: 0,
+            errors: [] as string[]
+        };
+
+        // 각 행을 처리
+        for (let i = 0; i < dataRows.length; i++) {
+            const row = dataRows[i];
+            try {
+                const parsed = parseFormResponse(row, headers);
+
+                if (!parsed.studentId || !parsed.name) {
+                    results.skipped++;
+                    continue;
+                }
+
+                // 사용자 찾기 또는 생성
+                let user = await prisma.user.findUnique({
+                    where: { studentId: parsed.studentId }
+                });
+
+                if (!user) {
+                    // 사용자가 없으면 생성 (임시 비밀번호)
+                    const hashedPassword = await bcrypt.hash(parsed.studentId, 10);
+                    user = await prisma.user.create({
+                        data: {
+                            studentId: parsed.studentId,
+                            password: hashedPassword,
+                            name: parsed.name,
+                            role: 'GUEST'
+                        }
+                    });
+                }
+
+                // 이미 지원서가 있는지 확인
+                const existingApp = await prisma.application.findUnique({
+                    where: { userId: user.id }
+                });
+
+                if (existingApp) {
+                    results.skipped++;
+                    continue;
+                }
+
+                // 트랙이 없으면 스킵
+                if (!parsed.track) {
+                    results.skipped++;
+                    continue;
+                }
+
+                // 지원서 생성
+                await prisma.application.create({
+                    data: {
+                        userId: user.id,
+                        track: parsed.track as 'FRONTEND' | 'BACKEND' | 'DESIGN' | 'PM',
+                        content: parsed.content,
+                        phoneLastDigits: parsed.phoneLastDigits,
+                        status: 'PENDING'
+                    }
+                });
+
+                results.imported++;
+            } catch (error: any) {
+                results.errors.push(`행 ${i + 2}: ${error.message}`);
+            }
+        }
+
+        res.json({
+            success: true,
+            results
+        });
+    } catch (error) {
+        console.error('Import from Google Form error:', error);
+        res.status(500).json({ message: 'Internal server error', error: (error as Error).message });
     }
 });
 

@@ -16,6 +16,8 @@ enum Role {
 enum Track {
   FRONTEND
   BACKEND
+  DESIGN
+  PM
 }
 
 model User {
@@ -34,14 +36,19 @@ model User {
 }
 
 model Application {
-  id        Int      @id @default(autoincrement())
-  userId    Int      @unique
-  track     Track
-  content   String   // JSON string or long text
-  status    String   @default("PENDING") // PENDING, APPROVED, REJECTED
-  createdAt DateTime @default(now())
+  id                      Int       @id @default(autoincrement())
+  userId                  Int       @unique
+  track                   Track
+  content                 String    // JSON string or long text
+  status                  String    @default("PENDING") // PENDING, DOCUMENT_APPROVED, INTERVIEW_APPROVED, REJECTED
+  phoneLastDigits         String?   // 전화번호 뒷자리 (4자리)
+  interviewPreferences    String?   // JSON: { date: "2024-02-23", times: [{ priority: 1, time: "13:00" }, ...] }
+  confirmedInterviewDate  DateTime? // 확정된 면접 날짜
+  confirmedInterviewTime  String?   // 확정된 면접 시간 (예: "13:00")
+  createdAt               DateTime  @default(now())
+  updatedAt               DateTime  @updatedAt
   
-  user      User     @relation(fields: [userId], references: [id])
+  user                    User      @relation(fields: [userId], references: [id])
 }
 
 model Session {
@@ -67,4 +74,12 @@ model Attendance {
   user      User     @relation(fields: [userId], references: [id])
 
   @@unique([sessionId, userId])
+}
+
+model ApplicationSettings {
+  id              Int      @id @default(autoincrement())
+  resultOpenDate  DateTime // 결과 공개 날짜
+  googleFormUrl   String?  // 구글폼 링크
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
 }

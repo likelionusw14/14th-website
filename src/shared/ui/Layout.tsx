@@ -12,11 +12,10 @@ const Layout = () => {
                 <nav className="hidden md:flex gap-8 text-sm font-medium text-slate-300 items-center">
                     <Link to="/" className="hover:text-white transition-colors">동아리 소개</Link>
                     <Link to="/project" className="hover:text-white transition-colors">프로젝트</Link>
+                    <Link to="/application" className="hover:text-white transition-colors">지원하기</Link>
+                    <Link to="/result" className="hover:text-white transition-colors">결과 조회</Link>
                     {isAuthenticated && user ? (
                         <div className="flex items-center gap-4">
-                            {user.role === 'GUEST' && (
-                                <Link to="/application" className="hover:text-white transition-colors">지원하기</Link>
-                            )}
                             {(user.role === 'BABY_LION' || user.role === 'ADMIN') && (
                                 <Link to="/attendance" className="hover:text-white transition-colors">출석체크</Link>
                             )}
@@ -34,7 +33,7 @@ const Layout = () => {
                             <button onClick={logout} className="hover:text-red-400 transition-colors">Logout</button>
                         </div>
                     ) : (
-                        <Link to="/login" className="hover:text-white transition-colors">지원하기</Link>
+                        <Link to="/login" className="hover:text-white transition-colors">로그인</Link>
                     )}
                 </nav>
             </header>

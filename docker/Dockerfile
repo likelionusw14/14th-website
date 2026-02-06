@@ -10,13 +10,16 @@ RUN apk add --no-cache openssl libc6-compat
 
 # 백엔드 의존성 설치
 COPY server/package*.json ./
-RUN npm ci
+RUN echo "Installing backend dependencies..." && npm ci
 
 # 백엔드 소스 코드 복사 및 빌드
 COPY server/ ./
 # Prisma Client 생성 (빌드 전에 필요)
-RUN npx prisma generate
-RUN npm run build
+# 빌드 시점에는 DATABASE_URL이 필요 없지만, 스키마 검증을 위해 더미 값 제공
+ARG DATABASE_URL="postgresql://dummy:dummy@localhost:5432/dummy"
+ENV DATABASE_URL=$DATABASE_URL
+RUN echo "Generating Prisma Client..." && npx prisma generate
+RUN echo "Building backend..." && npm run build
 
 # ========== 프론트엔드 빌드 스테이지 ==========
 FROM node:20-alpine AS frontend-builder
@@ -25,14 +28,14 @@ WORKDIR /app
 
 # 프론트엔드 의존성 설치
 COPY package*.json ./
-RUN npm ci
+RUN echo "Installing frontend dependencies..." && npm ci
 
 # 프론트엔드 소스 코드 복사 및 빌드
 COPY . .
 # 프로덕션 빌드 시 VITE_API_URL을 빈 문자열로 설정하여 상대 경로 사용 (nginx 프록시 활용)
 ARG VITE_API_URL=""
 ENV VITE_API_URL=$VITE_API_URL
-RUN npm run build
+RUN echo "Building frontend..." && npm run build
 
 # ========== 최종 스테이지: nginx + 백엔드 ==========
 FROM nginx:alpine

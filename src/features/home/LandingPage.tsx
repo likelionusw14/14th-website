@@ -1,8 +1,31 @@
+import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import StarBackground from '../../shared/ui/StarBackground';
 import { Link } from 'react-router-dom';
+import StarBackground from '../../shared/ui/StarBackground';
+import { API_BASE_URL } from '../../shared/context/AuthContext';
 
 const LandingPage = () => {
+    const [googleFormUrl, setGoogleFormUrl] = useState<string | null>(null);
+    const [isLoading, setIsLoading] = useState(true);
+
+    useEffect(() => {
+        fetchGoogleFormUrl();
+    }, []);
+
+    const fetchGoogleFormUrl = async () => {
+        try {
+            const response = await fetch(`${API_BASE_URL}/api/application/google-form-url`);
+            const result = await response.json();
+            if (result.success) {
+                setGoogleFormUrl(result.googleFormUrl);
+            }
+        } catch (error) {
+            console.error('Failed to fetch google form URL:', error);
+        } finally {
+            setIsLoading(false);
+        }
+    };
+
     return (
         <div className="relative min-h-screen w-full overflow-hidden bg-deep-navy">
             <StarBackground />
@@ -41,18 +64,39 @@ const LandingPage = () => {
                     우리는 코딩이라는 무한한 우주를 탐험합니다.
                 </motion.p>
 
-                <Link to="/login">
-                    <motion.button
+                {isLoading ? (
+                    <motion.div
+                        initial={{ scale: 0.9, opacity: 0 }}
+                        animate={{ scale: 1, opacity: 1 }}
+                        transition={{ delay: 0.8, type: "spring" }}
+                        className="px-8 py-4 bg-white/5 border border-white/10 rounded-full text-slate-500 font-semibold"
+                    >
+                        로딩 중...
+                    </motion.div>
+                ) : googleFormUrl ? (
+                    <motion.a
+                        href={googleFormUrl}
+                        target="_blank"
+                        rel="noopener noreferrer"
                         initial={{ scale: 0.9, opacity: 0 }}
                         animate={{ scale: 1, opacity: 1 }}
                         whileHover={{ scale: 1.05 }}
                         whileTap={{ scale: 0.95 }}
                         transition={{ delay: 0.8, type: "spring" }}
-                        className="px-8 py-4 bg-white/10 border border-white/20 rounded-full text-white font-semibold hover:bg-white/20 hover:border-white/40 backdrop-blur-md transition-all shadow-[0_0_20px_rgba(59,130,246,0.5)] cursor-pointer"
+                        className="inline-block px-8 py-4 bg-white/10 border border-white/20 rounded-full text-white font-semibold hover:bg-white/20 hover:border-white/40 backdrop-blur-md transition-all shadow-[0_0_20px_rgba(59,130,246,0.5)] cursor-pointer"
                     >
                         미션 합류하기
-                    </motion.button>
-                </Link>
+                    </motion.a>
+                ) : (
+                    <motion.div
+                        initial={{ scale: 0.9, opacity: 0 }}
+                        animate={{ scale: 1, opacity: 1 }}
+                        transition={{ delay: 0.8, type: "spring" }}
+                        className="px-8 py-4 bg-white/5 border border-white/10 rounded-full text-slate-500 font-semibold cursor-not-allowed"
+                    >
+                        준비 중...
+                    </motion.div>
+                )}
             </section>
 
             {/* Tracks / Introduction */}
@@ -136,11 +180,12 @@ const LandingPage = () => {
 
                 <div className="relative border-l-2 border-white/10 ml-4 md:ml-0 md:pl-0 space-y-12">
                     {[
-                        { date: "3월", title: "Liftoff (모집 및 오리엔테이션)", desc: "새로운 크루들이 우주선에 탑승합니다." },
-                        { date: "4월 - 6월", title: "Orbit Training (트랙 교육)", desc: "트랙별 집중 학습 (React, Spring 등)" },
-                        { date: "7월 - 8월", title: "Hyperdrive (아이디어톤 & 해커톤)", desc: "팀을 이루어 실제 서비스를 구현합니다." },
-                        { date: "9월 - 11월", title: "Deep Space Exploration", desc: "교내 해커톤 및 최종 프로젝트 진행." },
-                        { date: "12월", title: "Landing (데모데이)", desc: "1년간의 여정을 마무리하며 성과를 공유합니다." }
+                        { date: "3월", title: "OT (모집 및 오리엔테이션)", desc: "새로운 아기사자들이 우주선에 탑승합니다." },
+                        { date: "5월", title: "중앙 아이디어톤", desc: "전국 아기사자들이 모여 아이디어를 공유합니다." },
+                        { date: "4월 - 6월", title: "1학기 트랙별 세션 (트랙 교육)", desc: "트랙별 집중 학습 (React, Spring 등)" },
+                        { date: "7월 - 8월", title: "중앙 해커톤", desc: "팀을 이루어 실제 서비스를 구현합니다." },
+                        { date: "9월 - 11월", title: "2학기 트랙별 세션", desc: "심화 과정을 진행합니다." },
+                        { date: "12월", title: "종강총회", desc: "1년간의 여정을 마무리하며 성과를 공유합니다." }
                     ].map((item, index) => (
                         <motion.div
                             key={index}
