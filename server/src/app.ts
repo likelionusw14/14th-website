@@ -14,6 +14,8 @@ const PORT = process.env.PORT || 4000;
 const allowedOrigins = [
     'http://localhost:5173',
     'http://localhost:3000',
+    'https://www.usw-likelion.kr',
+    'https://usw-likelion.kr',
     process.env.FRONTEND_URL,
     process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : undefined,
 ].filter(Boolean) as string[];
@@ -40,6 +42,12 @@ app.use(cors({
         
         // Cloud Run URL 패턴 허용 (*.run.app) - NODE_ENV와 관계없이 항상 허용
         if (origin.includes('.run.app')) {
+            callback(null, true);
+            return;
+        }
+        
+        // usw-likelion.kr 도메인 패턴 허용
+        if (origin.includes('usw-likelion.kr')) {
             callback(null, true);
             return;
         }
