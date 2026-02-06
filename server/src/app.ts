@@ -23,13 +23,18 @@ app.use(cors({
         // origin이 없는 경우 (같은 도메인에서 요청, nginx 프록시 등) 허용
         // 개발 환경에서는 모든 origin 허용
         // 프로덕션에서는 허용된 origin 목록에 있거나 origin이 없는 경우 허용
+        // Cloud Run에서는 같은 도메인에서 요청하므로 origin이 없거나 같은 도메인인 경우 허용
         if (!origin || 
             process.env.NODE_ENV === 'development' || 
             allowedOrigins.includes(origin) ||
-            allowedOrigins.some(allowed => origin && origin.includes(allowed))) {
+            allowedOrigins.some(allowed => origin && origin.includes(allowed)) ||
+            (process.env.NODE_ENV === 'production' && !origin)) {
             callback(null, true);
         } else {
             console.warn(`CORS blocked origin: ${origin}`);
+            // #region agent log
+            fetch('http://127.0.0.1:7243/ingest/6b883636-1481-4250-a61b-b80d8e085cc6',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'app.ts:32',message:'CORS blocked',data:{origin,allowedOrigins,nodeEnv:process.env.NODE_ENV},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'N'})}).catch(()=>{});
+            // #endregion
             callback(new Error('Not allowed by CORS'));
         }
     },
