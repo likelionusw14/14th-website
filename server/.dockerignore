@@ -33,5 +33,3 @@ Dockerfile
 # Tests
 coverage/
 
-# Temp files
-temp-portal-ref/

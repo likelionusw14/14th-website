@@ -46,8 +46,5 @@ coverage/
 *.md
 README*
 
-# Server temp files
-server/temp-portal-ref/
-
 # Prisma
 server/prisma/migrations/

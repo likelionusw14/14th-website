@@ -75,6 +75,22 @@ app.get('/', (req, res) => {
     res.send('Likelion USW API is running');
 });
 
+// Prisma Client 초기화 테스트 (서버 시작 시)
+import { PrismaClient } from '@prisma/client';
+const testPrisma = new PrismaClient();
+testPrisma.$connect().then(() => {
+    console.log('Prisma Client initialized successfully');
+    testPrisma.$disconnect();
+}).catch((err) => {
+    console.error('Prisma Client initialization failed:', err);
+    // #region agent log
+    fetch('http://127.0.0.1:7243/ingest/6b883636-1481-4250-a61b-b80d8e085cc6',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'app.ts:82',message:'Prisma Client init failed',data:{error:err.message,errorName:err.name},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'L'})}).catch(()=>{});
+    // #endregion
+});
+
 app.listen(PORT, () => {
     console.log(`Server is running on port ${PORT}`);
+    // #region agent log
+    fetch('http://127.0.0.1:7243/ingest/6b883636-1481-4250-a61b-b80d8e085cc6',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'app.ts:90',message:'Server started successfully',data:{port:PORT,nodeEnv:process.env.NODE_ENV},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'K'})}).catch(()=>{});
+    // #endregion
 });

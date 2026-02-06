@@ -73,9 +73,9 @@ export const verifyPortalCredentials = async (studentId: string, password: strin
             pythonProcess.on('close', (code: number | null) => {
                 resolve(code || 0);
             });
-            pythonProcess.on('error', (err) => {
+            pythonProcess.on('error', (err: NodeJS.ErrnoException) => {
                 // #region agent log
-                fetch('http://127.0.0.1:7243/ingest/6b883636-1481-4250-a61b-b80d8e085cc6',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'portalScraperPython.ts:59',message:'Python process error event',data:{error:err.message,code:err.code},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'C'})}).catch(()=>{});
+                fetch('http://127.0.0.1:7243/ingest/6b883636-1481-4250-a61b-b80d8e085cc6',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'portalScraperPython.ts:59',message:'Python process error event',data:{error:err.message,code:(err as any).code},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'C'})}).catch(()=>{});
                 // #endregion
             });
         });
