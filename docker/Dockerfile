@@ -5,6 +5,9 @@ FROM node:20-alpine AS backend-builder
 
 WORKDIR /app/server
 
+# OpenSSL 라이브러리 설치 (Prisma 엔진이 필요로 함)
+RUN apk add --no-cache openssl libc6-compat
+
 # 백엔드 의존성 설치
 COPY server/package*.json ./
 RUN npm ci
@@ -47,8 +50,8 @@ COPY --from=backend-builder /app/server/package*.json /app/server/
 COPY server/prisma /app/server/prisma
 
 # Node.js 및 Prisma CLI 설치 (백엔드 실행용)
-# OpenSSL 1.1 호환 라이브러리 설치 (Prisma 엔진이 필요로 함)
-RUN apk add --no-cache nodejs npm openssl1.1-compat
+# OpenSSL 라이브러리 설치 (Prisma 엔진이 필요로 함)
+RUN apk add --no-cache nodejs npm openssl libc6-compat
 # Prisma CLI를 전역으로 설치 (런타임에서 prisma generate 실행용)
 RUN npm install -g prisma@^5.22.0
 
