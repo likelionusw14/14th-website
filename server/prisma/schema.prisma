@@ -78,8 +78,38 @@ model Attendance {
 
 model ApplicationSettings {
   id              Int      @id @default(autoincrement())
-  resultOpenDate  DateTime // 결과 공개 날짜
+  
+  // 서류 결과 공개 기간
+  documentResultStartDate DateTime? // 서류 결과 공개 시작일
+  documentResultEndDate   DateTime? // 서류 결과 공개 종료일 (= 면접 일정 선택 마감일)
+  
+  // 면접 일정 공개일 (확정된 면접 일시 공개)
+  interviewScheduleDate   DateTime? // 확정된 면접 일정 공개일
+  
+  // 최종 결과 공개일 (면접 합/불)
+  finalResultDate         DateTime? // 최종 결과 공개일
+  
+  // 기존 필드 (하위 호환성)
+  resultOpenDate  DateTime // 기존 결과 공개 날짜
   googleFormUrl   String?  // 구글폼 링크
   createdAt       DateTime @default(now())
   updatedAt       DateTime @updatedAt
 }
+
+model InterviewSettings {
+  id              Int      @id @default(autoincrement())
+  
+  // 면접 가능 날짜들 (JSON 배열: ["2026-02-23", "2026-02-24", "2026-02-25"])
+  availableDates  String   @default("[]")
+  
+  // 면접 시간대
+  startTime       String   @default("09:00")
+  endTime         String   @default("16:00")
+  
+  // 면접 시간 간격 (분 단위)
+  intervalMinutes Int      @default(20)
+  
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+}
+

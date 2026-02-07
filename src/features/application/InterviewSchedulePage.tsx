@@ -5,38 +5,98 @@ import { useSearchParams } from 'react-router-dom';
 import { API_BASE_URL } from '../../shared/context/AuthContext';
 import StarBackground from '../../shared/ui/StarBackground';
 
+interface InterviewSettings {
+    availableDates: string[];
+    startTime: string;
+    endTime: string;
+    intervalMinutes: number;
+}
+
 const InterviewSchedulePage = () => {
     const [searchParams] = useSearchParams();
-    const { register, handleSubmit, formState: { errors }, watch, setValue } = useForm();
+    const { register, handleSubmit, formState: { errors }, setValue } = useForm();
     const [errorMsg, setErrorMsg] = useState('');
     const [successMsg, setSuccessMsg] = useState('');
     const [isSubmitting, setIsSubmitting] = useState(false);
+    const [isLoading, setIsLoading] = useState(true);
+    const [dateOptions, setDateOptions] = useState<{ value: string; label: string }[]>([]);
+    const [timeOptions, setTimeOptions] = useState<string[]>([]);
 
     // URL 파라미터에서 사용자 정보 가져오기
     useEffect(() => {
         const studentId = searchParams.get('studentId');
         const name = searchParams.get('name');
         const phoneLastDigits = searchParams.get('phoneLastDigits');
-        
+
         if (studentId) setValue('studentId', studentId);
         if (name) setValue('name', name);
         if (phoneLastDigits) setValue('phoneLastDigits', phoneLastDigits);
     }, [searchParams, setValue]);
 
-    // 날짜 옵션: 2월 23, 24, 25일
-    const dateOptions = [
-        { value: '2024-02-23', label: '2월 23일 (금)' },
-        { value: '2024-02-24', label: '2월 24일 (토)' },
-        { value: '2024-02-25', label: '2월 25일 (일)' }
-    ];
+    // 면접 설정 동적으로 가져오기
+    useEffect(() => {
+        const fetchInterviewSettings = async () => {
+            try {
+                const response = await fetch(`${API_BASE_URL}/api/application/interview-settings`);
+                const result = await response.json();
 
-    // 시간 옵션: 13:00 ~ 16:00, 30분 간격
-    const timeOptions = [];
-    for (let hour = 13; hour <= 15; hour++) {
-        timeOptions.push(`${hour.toString().padStart(2, '0')}:00`);
-        timeOptions.push(`${hour.toString().padStart(2, '0')}:30`);
-    }
-    timeOptions.push('16:00');
+                if (result.success && result.settings) {
+                    const settings: InterviewSettings = result.settings;
+
+                    // 날짜 옵션 생성
+                    const dates = settings.availableDates.map((dateStr: string) => {
+                        const date = new Date(dateStr);
+                        const dayNames = ['일', '월', '화', '수', '목', '금', '토'];
+                        const month = date.getMonth() + 1;
+                        const day = date.getDate();
+                        const dayName = dayNames[date.getDay()];
+                        return {
+                            value: dateStr,
+                            label: `${month}월 ${day}일 (${dayName})`
+                        };
+                    });
+                    setDateOptions(dates);
+
+                    // 시간 옵션 생성
+                    const times: string[] = [];
+                    const [startHour, startMin] = settings.startTime.split(':').map(Number);
+                    const [endHour, endMin] = settings.endTime.split(':').map(Number);
+                    const interval = settings.intervalMinutes;
+
+                    let currentMinutes = startHour * 60 + startMin;
+                    const endMinutes = endHour * 60 + endMin;
+
+                    while (currentMinutes <= endMinutes) {
+                        const h = Math.floor(currentMinutes / 60);
+                        const m = currentMinutes % 60;
+                        times.push(`${h.toString().padStart(2, '0')}:${m.toString().padStart(2, '0')}`);
+                        currentMinutes += interval;
+                    }
+                    setTimeOptions(times);
+                }
+            } catch (error) {
+                console.error('Failed to fetch interview settings:', error);
+                // 기본값 사용
+                setDateOptions([
+                    { value: '2026-02-23', label: '2월 23일 (월)' },
+                    { value: '2026-02-24', label: '2월 24일 (화)' },
+                    { value: '2026-02-25', label: '2월 25일 (수)' }
+                ]);
+                const defaultTimes: string[] = [];
+                for (let hour = 9; hour <= 15; hour++) {
+                    defaultTimes.push(`${hour.toString().padStart(2, '0')}:00`);
+                    defaultTimes.push(`${hour.toString().padStart(2, '0')}:20`);
+                    defaultTimes.push(`${hour.toString().padStart(2, '0')}:40`);
+                }
+                defaultTimes.push('16:00');
+                setTimeOptions(defaultTimes);
+            } finally {
+                setIsLoading(false);
+            }
+        };
+
+        fetchInterviewSettings();
+    }, []);
 
     // URL 파라미터에서 사용자 정보가 있으면 본인 확인 섹션 숨기기
     const hasUserInfo = searchParams.get('studentId') && searchParams.get('name') && searchParams.get('phoneLastDigits');
@@ -152,7 +212,7 @@ const InterviewSchedulePage = () => {
                                     <div>
                                         <label className="block text-sm font-medium text-slate-300 mb-2">전화번호 뒷자리</label>
                                         <input
-                                            {...register('phoneLastDigits', { 
+                                            {...register('phoneLastDigits', {
                                                 required: '전화번호 뒷자리를 입력해주세요',
                                                 pattern: {
                                                     value: /^\d{4}$/,
@@ -183,7 +243,7 @@ const InterviewSchedulePage = () => {
                                             <div>
                                                 <label className="block text-xs text-slate-400 mb-2">날짜</label>
                                                 <select
-                                                    {...register(`date${priority}` as any, { 
+                                                    {...register(`date${priority}` as any, {
                                                         required: `${priority}순위 날짜를 선택해주세요`
                                                     })}
                                                     className="w-full px-4 py-2 rounded-lg bg-white/5 border border-white/10 text-white focus:outline-none focus:border-comet-blue"
@@ -204,7 +264,7 @@ const InterviewSchedulePage = () => {
                                             <div>
                                                 <label className="block text-xs text-slate-400 mb-2">시간</label>
                                                 <select
-                                                    {...register(`time${priority}` as any, { 
+                                                    {...register(`time${priority}` as any, {
                                                         required: `${priority}순위 시간을 선택해주세요`,
                                                         validate: (value, formValues) => {
                                                             const currentDate = formValues[`date${priority}` as any];

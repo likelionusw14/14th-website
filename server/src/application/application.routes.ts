@@ -248,14 +248,27 @@ router.post('/result', async (req: Request, res: Response) => {
             return;
         }
 
-        // Check if result is open
+        // Check settings
         const settings = await prisma.applicationSettings.findFirst({
             orderBy: { createdAt: 'desc' }
         });
 
-        if (!settings || new Date() < settings.resultOpenDate) {
-            res.status(403).json({ 
-                message: '결과 공개일이 아닙니다',
+        const now = new Date();
+
+        // 단계별 결과 공개 체크
+        const canViewDocumentResult = settings?.documentResultStartDate && now >= settings.documentResultStartDate;
+        const canSelectInterviewTime = settings?.documentResultStartDate && settings?.documentResultEndDate &&
+            now >= settings.documentResultStartDate && now <= settings.documentResultEndDate;
+        const canViewInterviewSchedule = settings?.interviewScheduleDate && now >= settings.interviewScheduleDate;
+        const canViewFinalResult = settings?.finalResultDate && now >= settings.finalResultDate;
+
+        // 하위 호환: 새 설정이 없으면 기존 resultOpenDate 사용
+        const canViewAnyResult = canViewDocumentResult || (settings?.resultOpenDate && now >= settings.resultOpenDate);
+
+        if (!canViewAnyResult) {
+            res.status(403).json({
+                message: '결과 공개 기간이 아닙니다',
+                documentResultStartDate: settings?.documentResultStartDate || null,
                 resultOpenDate: settings?.resultOpenDate || null
             });
             return;
@@ -280,15 +293,36 @@ router.post('/result', async (req: Request, res: Response) => {
             return;
         }
 
+        // 단계별로 정보 반환
+        const result: any = {
+            status: user.application.status,
+            track: user.application.track,
+            // 시기 정보
+            canSelectInterviewTime,
+            canViewInterviewSchedule,
+            canViewFinalResult
+        };
+
+        // 서류 합격자의 면접 일정 선호도 (본인이 제출한 것)
+        if (user.application.interviewPreferences) {
+            result.interviewPreferences = JSON.parse(user.application.interviewPreferences);
+        }
+
+        // 면접 일정 공개일 이후에만 확정된 일정 표시
+        if (canViewInterviewSchedule && user.application.confirmedInterviewDate && user.application.confirmedInterviewTime) {
+            result.confirmedInterviewDate = user.application.confirmedInterviewDate;
+            result.confirmedInterviewTime = user.application.confirmedInterviewTime;
+        }
+
+        // 최종 결과 공개일 이전에는 최종합격 상태를 숨김 (서류합격으로 표시)
+        if (!canViewFinalResult && user.application.status === 'INTERVIEW_APPROVED') {
+            result.status = 'DOCUMENT_APPROVED';
+            result.finalResultPending = true;
+        }
+
         res.json({
             success: true,
-            result: {
-                status: user.application.status,
-                track: user.application.track,
-                interviewPreferences: user.application.interviewPreferences ? JSON.parse(user.application.interviewPreferences) : null,
-                confirmedInterviewDate: user.application.confirmedInterviewDate,
-                confirmedInterviewTime: user.application.confirmedInterviewTime
-            }
+            result
         });
     } catch (error) {
         console.error('Get result error:', error);
@@ -306,14 +340,64 @@ router.post('/interview-preferences', async (req: Request, res: Response) => {
             return;
         }
 
-        // Validate dates and times
-        const validDates = ['2024-02-23', '2024-02-24', '2024-02-25'];
-        const validTimes = [];
-        for (let hour = 13; hour <= 15; hour++) {
-            validTimes.push(`${hour.toString().padStart(2, '0')}:00`);
-            validTimes.push(`${hour.toString().padStart(2, '0')}:30`);
+        // 면접 일정 선택 기간 체크
+        const appSettings = await prisma.applicationSettings.findFirst({
+            orderBy: { createdAt: 'desc' }
+        });
+
+        const now = new Date();
+        const canSelectInterviewTime = appSettings?.documentResultStartDate && appSettings?.documentResultEndDate &&
+            now >= appSettings.documentResultStartDate && now <= appSettings.documentResultEndDate;
+
+        // 하위 호환: 새 설정이 없으면 기존 로직 사용
+        const hasNewSettings = appSettings?.documentResultStartDate && appSettings?.documentResultEndDate;
+        if (hasNewSettings && !canSelectInterviewTime) {
+            res.status(403).json({
+                message: '면접 일정 선택 기간이 아닙니다',
+                startDate: appSettings?.documentResultStartDate,
+                endDate: appSettings?.documentResultEndDate
+            });
+            return;
         }
-        validTimes.push('16:00');
+
+        // 면접 설정 가져오기
+        const interviewSettings = await prisma.interviewSettings.findFirst({
+            orderBy: { createdAt: 'desc' }
+        });
+
+        // 동적으로 유효한 날짜/시간 생성
+        let validDates: string[];
+        let validTimes: string[];
+
+        if (interviewSettings) {
+            validDates = JSON.parse(interviewSettings.availableDates);
+
+            // 시간 옵션 생성
+            validTimes = [];
+            const [startHour, startMin] = interviewSettings.startTime.split(':').map(Number);
+            const [endHour, endMin] = interviewSettings.endTime.split(':').map(Number);
+            const interval = interviewSettings.intervalMinutes;
+
+            let currentMinutes = startHour * 60 + startMin;
+            const endMinutes = endHour * 60 + endMin;
+
+            while (currentMinutes <= endMinutes) {
+                const h = Math.floor(currentMinutes / 60);
+                const m = currentMinutes % 60;
+                validTimes.push(`${h.toString().padStart(2, '0')}:${m.toString().padStart(2, '0')}`);
+                currentMinutes += interval;
+            }
+        } else {
+            // 기본값 (2026년 2월)
+            validDates = ['2026-02-23', '2026-02-24', '2026-02-25'];
+            validTimes = [];
+            for (let hour = 9; hour <= 15; hour++) {
+                validTimes.push(`${hour.toString().padStart(2, '0')}:00`);
+                validTimes.push(`${hour.toString().padStart(2, '0')}:20`);
+                validTimes.push(`${hour.toString().padStart(2, '0')}:40`);
+            }
+            validTimes.push('16:00');
+        }
 
         for (const timeObj of times) {
             if (!timeObj.priority || !timeObj.date || !timeObj.time) {
@@ -321,11 +405,11 @@ router.post('/interview-preferences', async (req: Request, res: Response) => {
                 return;
             }
             if (!validDates.includes(timeObj.date)) {
-                res.status(400).json({ message: '날짜는 2월 23일, 24일, 25일 중 하나여야 합니다' });
+                res.status(400).json({ message: `유효하지 않은 날짜입니다. 가능한 날짜: ${validDates.join(', ')}` });
                 return;
             }
             if (!validTimes.includes(timeObj.time)) {
-                res.status(400).json({ message: '시간은 13:00부터 16:00까지 30분 간격으로 선택해주세요' });
+                res.status(400).json({ message: `유효하지 않은 시간입니다.` });
                 return;
             }
         }
@@ -355,7 +439,8 @@ router.post('/interview-preferences', async (req: Request, res: Response) => {
         }
 
         // Check if document approved (서류합격한 지원자만 면접 일정 선택 가능)
-        if (user.application.status !== 'DOCUMENT_APPROVED') {
+        // INTERVIEW_APPROVED도 허용 (최종 결과 공개 전에는 DOCUMENT_APPROVED로 보이므로)
+        if (user.application.status !== 'DOCUMENT_APPROVED' && user.application.status !== 'INTERVIEW_APPROVED') {
             res.status(403).json({ message: '서류합격한 지원자만 면접 일정을 선택할 수 있습니다' });
             return;
         }
@@ -432,6 +517,61 @@ router.patch('/:id/interview-confirm', authenticateToken, requireAdmin, async (r
     }
 });
 
+// 7-1. Update Application Track (Admin)
+router.patch('/:id/track', authenticateToken, requireAdmin, async (req: Request, res: Response) => {
+    try {
+        const applicationId = parseInt(Array.isArray(req.params.id) ? req.params.id[0] : req.params.id);
+        const { track } = req.body;
+
+        if (!track) {
+            res.status(400).json({ message: '트랙을 입력해주세요' });
+            return;
+        }
+
+        if (!['FRONTEND', 'BACKEND', 'DESIGN', 'PM'].includes(track)) {
+            res.status(400).json({ message: '올바른 트랙을 선택해주세요' });
+            return;
+        }
+
+        const application = await prisma.application.findUnique({
+            where: { id: applicationId }
+        });
+
+        if (!application) {
+            res.status(404).json({ message: 'Application not found' });
+            return;
+        }
+
+        const updatedApplication = await prisma.application.update({
+            where: { id: applicationId },
+            data: { track },
+            include: {
+                user: {
+                    select: {
+                        id: true,
+                        studentId: true,
+                        name: true,
+                        major: true
+                    }
+                }
+            }
+        });
+
+        res.json({
+            success: true,
+            application: {
+                id: updatedApplication.id,
+                track: updatedApplication.track,
+                status: updatedApplication.status,
+                user: updatedApplication.user
+            }
+        });
+    } catch (error) {
+        console.error('Update application track error:', error);
+        res.status(500).json({ message: 'Internal server error' });
+    }
+});
+
 // 8. Get/Set Result Open Date (Admin)
 router.get('/settings', authenticateToken, requireAdmin, async (req: Request, res: Response) => {
     try {
@@ -451,7 +591,14 @@ router.get('/settings', authenticateToken, requireAdmin, async (req: Request, re
 
 router.post('/settings', authenticateToken, requireAdmin, async (req: Request, res: Response) => {
     try {
-        const { resultOpenDate, googleFormUrl } = req.body;
+        const {
+            resultOpenDate,
+            googleFormUrl,
+            documentResultStartDate,
+            documentResultEndDate,
+            interviewScheduleDate,
+            finalResultDate
+        } = req.body;
 
         // Get or create settings
         const existingSettings = await prisma.applicationSettings.findFirst({
@@ -459,15 +606,37 @@ router.post('/settings', authenticateToken, requireAdmin, async (req: Request, r
         });
 
         const updateData: any = {};
-        
+
+        // 날짜 필드 처리 헬퍼 함수
+        const processDate = (dateStr: string | undefined | null) => {
+            if (dateStr === null) return null;
+            if (!dateStr) return undefined;
+            const date = new Date(dateStr);
+            if (isNaN(date.getTime())) return undefined;
+            return date;
+        };
+
         if (resultOpenDate) {
-            const date = new Date(resultOpenDate);
-            if (isNaN(date.getTime())) {
+            const date = processDate(resultOpenDate);
+            if (date === undefined && resultOpenDate) {
                 res.status(400).json({ message: '올바른 날짜 형식이 아닙니다' });
                 return;
             }
-            updateData.resultOpenDate = date;
+            if (date) updateData.resultOpenDate = date;
         }
+
+        // 새로운 날짜 필드들 처리
+        const docStart = processDate(documentResultStartDate);
+        if (docStart !== undefined) updateData.documentResultStartDate = docStart;
+
+        const docEnd = processDate(documentResultEndDate);
+        if (docEnd !== undefined) updateData.documentResultEndDate = docEnd;
+
+        const interviewSchedule = processDate(interviewScheduleDate);
+        if (interviewSchedule !== undefined) updateData.interviewScheduleDate = interviewSchedule;
+
+        const finalResult = processDate(finalResultDate);
+        if (finalResult !== undefined) updateData.finalResultDate = finalResult;
 
         if (googleFormUrl !== undefined) {
             updateData.googleFormUrl = googleFormUrl || null;
@@ -487,7 +656,11 @@ router.post('/settings', authenticateToken, requireAdmin, async (req: Request, r
             settings = await prisma.applicationSettings.create({
                 data: {
                     resultOpenDate: new Date(resultOpenDate),
-                    googleFormUrl: googleFormUrl || null
+                    googleFormUrl: googleFormUrl || null,
+                    documentResultStartDate: docStart || null,
+                    documentResultEndDate: docEnd || null,
+                    interviewScheduleDate: interviewSchedule || null,
+                    finalResultDate: finalResult || null
                 }
             });
         }
@@ -708,6 +881,112 @@ router.post('/import-from-google-form', authenticateToken, requireAdmin, async (
     } catch (error) {
         console.error('Import from Google Form error:', error);
         res.status(500).json({ message: 'Internal server error', error: (error as Error).message });
+    }
+});
+
+// 11. Get Interview Settings (Public - for applicants to see available dates/times)
+router.get('/interview-settings', async (req: Request, res: Response) => {
+    try {
+        const settings = await prisma.interviewSettings.findFirst({
+            orderBy: { createdAt: 'desc' }
+        });
+
+        // 기본값 반환
+        if (!settings) {
+            res.json({
+                success: true,
+                settings: {
+                    availableDates: ['2026-02-23', '2026-02-24', '2026-02-25'],
+                    startTime: '09:00',
+                    endTime: '16:00',
+                    intervalMinutes: 20
+                }
+            });
+            return;
+        }
+
+        res.json({
+            success: true,
+            settings: {
+                availableDates: JSON.parse(settings.availableDates),
+                startTime: settings.startTime,
+                endTime: settings.endTime,
+                intervalMinutes: settings.intervalMinutes
+            }
+        });
+    } catch (error) {
+        console.error('Get interview settings error:', error);
+        res.status(500).json({ message: 'Internal server error' });
+    }
+});
+
+// 12. Set Interview Settings (Admin)
+router.post('/interview-settings', authenticateToken, requireAdmin, async (req: Request, res: Response) => {
+    try {
+        const { availableDates, startTime, endTime, intervalMinutes } = req.body;
+
+        // 유효성 검사
+        if (availableDates && !Array.isArray(availableDates)) {
+            res.status(400).json({ message: '면접 가능 날짜는 배열이어야 합니다' });
+            return;
+        }
+
+        if (intervalMinutes && ![10, 15, 20, 30].includes(intervalMinutes)) {
+            res.status(400).json({ message: '면접 시간 간격은 10, 15, 20, 30분 중 하나여야 합니다' });
+            return;
+        }
+
+        // 시간 형식 검증 (HH:mm)
+        const timeRegex = /^([01]?[0-9]|2[0-3]):[0-5][0-9]$/;
+        if (startTime && !timeRegex.test(startTime)) {
+            res.status(400).json({ message: '시작 시간 형식이 올바르지 않습니다 (HH:mm)' });
+            return;
+        }
+        if (endTime && !timeRegex.test(endTime)) {
+            res.status(400).json({ message: '종료 시간 형식이 올바르지 않습니다 (HH:mm)' });
+            return;
+        }
+
+        // 기존 설정 찾기
+        const existingSettings = await prisma.interviewSettings.findFirst({
+            orderBy: { createdAt: 'desc' }
+        });
+
+        const updateData: any = {};
+        if (availableDates) updateData.availableDates = JSON.stringify(availableDates);
+        if (startTime) updateData.startTime = startTime;
+        if (endTime) updateData.endTime = endTime;
+        if (intervalMinutes) updateData.intervalMinutes = intervalMinutes;
+
+        let settings;
+        if (existingSettings) {
+            settings = await prisma.interviewSettings.update({
+                where: { id: existingSettings.id },
+                data: updateData
+            });
+        } else {
+            settings = await prisma.interviewSettings.create({
+                data: {
+                    availableDates: JSON.stringify(availableDates || ['2026-02-23', '2026-02-24', '2026-02-25']),
+                    startTime: startTime || '09:00',
+                    endTime: endTime || '16:00',
+                    intervalMinutes: intervalMinutes || 20
+                }
+            });
+        }
+
+        res.json({
+            success: true,
+            settings: {
+                availableDates: JSON.parse(settings.availableDates),
+                startTime: settings.startTime,
+                endTime: settings.endTime,
+                intervalMinutes: settings.intervalMinutes
+            }
+        });
+    } catch (error) {
+        console.error('Set interview settings error:', error);
+        res.status(500).json({ message: 'Internal server error' });
     }
 });
 

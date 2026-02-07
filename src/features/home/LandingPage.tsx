@@ -1,6 +1,5 @@
 import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { Link } from 'react-router-dom';
 import StarBackground from '../../shared/ui/StarBackground';
 import { API_BASE_URL } from '../../shared/context/AuthContext';
 
@@ -49,7 +48,7 @@ const LandingPage = () => {
                         Possibility to
                     </span>
                     <br />
-                    <span className="bg-clip-text text-transparent bg-gradient-to-r from-nebula-purple to-comet-blue">
+                    <span className="text-gradient-lion">
                         Reality
                     </span>
                 </motion.h1>
@@ -83,9 +82,9 @@ const LandingPage = () => {
                         whileHover={{ scale: 1.05 }}
                         whileTap={{ scale: 0.95 }}
                         transition={{ delay: 0.8, type: "spring" }}
-                        className="inline-block px-8 py-4 bg-white/10 border border-white/20 rounded-full text-white font-semibold hover:bg-white/20 hover:border-white/40 backdrop-blur-md transition-all shadow-[0_0_20px_rgba(59,130,246,0.5)] cursor-pointer"
+                        className="inline-block px-8 py-4 btn-gradient-lion rounded-full cursor-pointer"
                     >
-                        미션 합류하기
+                        🦁 미션 합류하기
                     </motion.a>
                 ) : (
                     <motion.div

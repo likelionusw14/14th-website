@@ -68,6 +68,20 @@ const AdminPage = () => {
         phoneLastDigits: '',
         track: 'FRONTEND' as 'FRONTEND' | 'BACKEND' | 'DESIGN' | 'PM'
     });
+    const [editingTrackAppId, setEditingTrackAppId] = useState<number | null>(null);
+
+    // 새로운 날짜 설정
+    const [documentResultStartDate, setDocumentResultStartDate] = useState('');
+    const [documentResultEndDate, setDocumentResultEndDate] = useState('');
+    const [interviewScheduleDate, setInterviewScheduleDate] = useState('');
+    const [finalResultDate, setFinalResultDate] = useState('');
+
+    // 면접 설정
+    const [interviewDates, setInterviewDates] = useState<string[]>(['2026-02-23', '2026-02-24', '2026-02-25']);
+    const [interviewStartTime, setInterviewStartTime] = useState('09:00');
+    const [interviewEndTime, setInterviewEndTime] = useState('16:00');
+    const [interviewInterval, setInterviewInterval] = useState(20);
+
 
     useEffect(() => {
         if (token) {
@@ -115,6 +129,7 @@ const AdminPage = () => {
 
     const fetchSettings = async () => {
         try {
+            // 기존 설정 가져오기
             const response = await fetch(`${API_BASE_URL}/api/application/settings`, {
                 headers: { Authorization: `Bearer ${token}` }
             });
@@ -123,6 +138,30 @@ const AdminPage = () => {
                 const date = new Date(result.settings.resultOpenDate);
                 setResultOpenDate(date.toISOString().split('T')[0]);
                 setGoogleFormUrl(result.settings.googleFormUrl || '');
+
+                // 새로운 날짜 필드
+                if (result.settings.documentResultStartDate) {
+                    setDocumentResultStartDate(new Date(result.settings.documentResultStartDate).toISOString().slice(0, 16));
+                }
+                if (result.settings.documentResultEndDate) {
+                    setDocumentResultEndDate(new Date(result.settings.documentResultEndDate).toISOString().slice(0, 16));
+                }
+                if (result.settings.interviewScheduleDate) {
+                    setInterviewScheduleDate(new Date(result.settings.interviewScheduleDate).toISOString().slice(0, 16));
+                }
+                if (result.settings.finalResultDate) {
+                    setFinalResultDate(new Date(result.settings.finalResultDate).toISOString().slice(0, 16));
+                }
+            }
+
+            // 면접 설정 가져오기
+            const interviewResponse = await fetch(`${API_BASE_URL}/api/application/interview-settings`);
+            const interviewResult = await interviewResponse.json();
+            if (interviewResult.success && interviewResult.settings) {
+                setInterviewDates(interviewResult.settings.availableDates || []);
+                setInterviewStartTime(interviewResult.settings.startTime || '09:00');
+                setInterviewEndTime(interviewResult.settings.endTime || '16:00');
+                setInterviewInterval(interviewResult.settings.intervalMinutes || 20);
             }
         } catch (error) {
             console.error('Failed to fetch settings:', error);
@@ -139,15 +178,20 @@ const AdminPage = () => {
         }
 
         try {
+            // 기존 설정 저장
             const response = await fetch(`${API_BASE_URL}/api/application/settings`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
                     Authorization: `Bearer ${token}`
                 },
-                body: JSON.stringify({ 
+                body: JSON.stringify({
                     resultOpenDate,
-                    googleFormUrl: googleFormUrl || null
+                    googleFormUrl: googleFormUrl || null,
+                    documentResultStartDate: documentResultStartDate || null,
+                    documentResultEndDate: documentResultEndDate || null,
+                    interviewScheduleDate: interviewScheduleDate || null,
+                    finalResultDate: finalResultDate || null
                 })
             });
             const result = await response.json();
@@ -317,6 +361,32 @@ const AdminPage = () => {
             } else {
                 setErrorMsg(result.message || '처리 실패');
                 setTimeout(() => setErrorMsg(''), 3000);
+            }
+        } catch (err) {
+            setErrorMsg('서버 오류가 발생했습니다.');
+            setTimeout(() => setErrorMsg(''), 3000);
+        }
+    };
+
+    const handleUpdateTrack = async (applicationId: number, track: 'FRONTEND' | 'BACKEND' | 'DESIGN' | 'PM') => {
+        try {
+            const response = await fetch(`${API_BASE_URL}/api/application/${applicationId}/track`, {
+                method: 'PATCH',
+                headers: {
+                    'Content-Type': 'application/json',
+                    Authorization: `Bearer ${token}`
+                },
+                body: JSON.stringify({ track })
+            });
+            const result = await response.json();
+
+            if (result.success) {
+                setSuccessMsg(`트랙이 ${getTrackText(track)}로 변경되었습니다.`);
+                setEditingTrackAppId(null);
+                fetchApplications();
+                setTimeout(() => setSuccessMsg(''), 3000);
+            } else {
+                setErrorMsg(result.message || '트랙 변경 실패');
             }
         } catch (err) {
             setErrorMsg('서버 오류가 발생했습니다.');
@@ -534,31 +604,28 @@ const AdminPage = () => {
                         <div className="flex gap-4 mb-6">
                             <button
                                 onClick={() => setActiveTab('applications')}
-                                className={`px-6 py-2 rounded-lg font-semibold transition-all ${
-                                    activeTab === 'applications'
-                                        ? 'bg-comet-blue text-white'
-                                        : 'bg-white/5 text-slate-400 hover:text-white'
-                                }`}
+                                className={`px-6 py-2 rounded-lg font-semibold transition-all ${activeTab === 'applications'
+                                    ? 'bg-comet-blue text-white'
+                                    : 'bg-white/5 text-slate-400 hover:text-white'
+                                    }`}
                             >
                                 지원서 관리
                             </button>
                             <button
                                 onClick={() => setActiveTab('attendance')}
-                                className={`px-6 py-2 rounded-lg font-semibold transition-all ${
-                                    activeTab === 'attendance'
-                                        ? 'bg-comet-blue text-white'
-                                        : 'bg-white/5 text-slate-400 hover:text-white'
-                                }`}
+                                className={`px-6 py-2 rounded-lg font-semibold transition-all ${activeTab === 'attendance'
+                                    ? 'bg-comet-blue text-white'
+                                    : 'bg-white/5 text-slate-400 hover:text-white'
+                                    }`}
                             >
                                 출석 관리
                             </button>
                             <button
                                 onClick={() => setActiveTab('settings')}
-                                className={`px-6 py-2 rounded-lg font-semibold transition-all ${
-                                    activeTab === 'settings'
-                                        ? 'bg-comet-blue text-white'
-                                        : 'bg-white/5 text-slate-400 hover:text-white'
-                                }`}
+                                className={`px-6 py-2 rounded-lg font-semibold transition-all ${activeTab === 'settings'
+                                    ? 'bg-comet-blue text-white'
+                                    : 'bg-white/5 text-slate-400 hover:text-white'
+                                    }`}
                             >
                                 설정
                             </button>
@@ -619,14 +686,21 @@ const AdminPage = () => {
                                             </div>
                                             <div>
                                                 <label className="block text-sm font-medium text-slate-300 mb-2">트랙 *</label>
-                                                <select
-                                                    value={newApplication.track}
-                                                    onChange={(e) => setNewApplication({ ...newApplication, track: e.target.value as 'FRONTEND' | 'BACKEND' })}
-                                                    className="w-full px-4 py-2 rounded-lg bg-white/5 border border-white/10 text-white focus:outline-none focus:border-comet-blue"
-                                                >
-                                                    <option value="FRONTEND">프론트엔드</option>
-                                                    <option value="BACKEND">백엔드</option>
-                                                </select>
+                                                <div className="flex gap-2 flex-wrap">
+                                                    {(['FRONTEND', 'BACKEND', 'DESIGN', 'PM'] as const).map((track) => (
+                                                        <button
+                                                            key={track}
+                                                            type="button"
+                                                            onClick={() => setNewApplication({ ...newApplication, track })}
+                                                            className={`px-4 py-2 rounded-lg font-semibold transition-all ${newApplication.track === track
+                                                                ? 'bg-comet-blue text-white'
+                                                                : 'bg-white/5 text-slate-300 hover:bg-white/10'
+                                                                }`}
+                                                        >
+                                                            {getTrackText(track)}
+                                                        </button>
+                                                    ))}
+                                                </div>
                                             </div>
                                         </div>
                                         <div className="flex gap-2 mt-4">
@@ -675,9 +749,35 @@ const AdminPage = () => {
                                                     <span className={`px-3 py-1 rounded-full text-xs font-semibold ${getStatusColor(app.status)}`}>
                                                         {getStatusText(app.status)}
                                                     </span>
-                                                    <span className="px-3 py-1 rounded-full text-xs font-semibold bg-blue-500/20 text-blue-400">
-                                                        {getTrackText(app.track)}
-                                                    </span>
+                                                    {editingTrackAppId === app.id ? (
+                                                        <div className="flex gap-1">
+                                                            {(['FRONTEND', 'BACKEND', 'DESIGN', 'PM'] as const).map((track) => (
+                                                                <button
+                                                                    key={track}
+                                                                    onClick={() => handleUpdateTrack(app.id, track)}
+                                                                    className={`px-2 py-1 rounded text-xs font-semibold transition-all ${app.track === track
+                                                                        ? 'bg-comet-blue text-white'
+                                                                        : 'bg-white/5 text-slate-300 hover:bg-white/10'
+                                                                        }`}
+                                                                >
+                                                                    {getTrackText(track)}
+                                                                </button>
+                                                            ))}
+                                                            <button
+                                                                onClick={() => setEditingTrackAppId(null)}
+                                                                className="px-2 py-1 rounded text-xs font-semibold bg-gray-500/20 text-gray-400 hover:bg-gray-500/30"
+                                                            >
+                                                                취소
+                                                            </button>
+                                                        </div>
+                                                    ) : (
+                                                        <button
+                                                            onClick={() => setEditingTrackAppId(app.id)}
+                                                            className="px-3 py-1 rounded-full text-xs font-semibold bg-blue-500/20 text-blue-400 hover:bg-blue-500/30 transition-all cursor-pointer"
+                                                        >
+                                                            {getTrackText(app.track)} ✏️
+                                                        </button>
+                                                    )}
                                                 </div>
                                             </div>
                                             <div className="p-4 rounded-lg bg-white/5 mb-4">
@@ -826,7 +926,7 @@ const AdminPage = () => {
                                             </p>
                                         </div>
                                         <div>
-                                            <label className="block text-sm font-medium text-slate-300 mb-2">결과 공개일</label>
+                                            <label className="block text-sm font-medium text-slate-300 mb-2">결과 공개일 (레거시)</label>
                                             <input
                                                 type="datetime-local"
                                                 value={resultOpenDate ? new Date(resultOpenDate + 'T00:00').toISOString().slice(0, 16) : ''}
@@ -836,12 +936,172 @@ const AdminPage = () => {
                                                 }}
                                                 className="w-full px-4 py-2 rounded-lg bg-white/5 border border-white/10 text-white focus:outline-none focus:border-comet-blue"
                                             />
+                                            <p className="text-xs text-slate-400 mt-1">
+                                                하위 호환용. 새 날짜 필드가 없을 경우 사용됩니다.
+                                            </p>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                {/* 단계별 결과 공개 설정 */}
+                                <div className="p-6 rounded-lg bg-white/5 border border-white/10">
+                                    <h3 className="text-white font-semibold mb-4">단계별 결과 공개 설정</h3>
+                                    <div className="space-y-4">
+                                        <div className="grid grid-cols-2 gap-4">
+                                            <div>
+                                                <label className="block text-sm font-medium text-slate-300 mb-2">서류 결과 공개 시작일</label>
+                                                <input
+                                                    type="datetime-local"
+                                                    value={documentResultStartDate}
+                                                    onChange={(e) => setDocumentResultStartDate(e.target.value)}
+                                                    className="w-full px-4 py-2 rounded-lg bg-white/5 border border-white/10 text-white focus:outline-none focus:border-comet-blue"
+                                                />
+                                            </div>
+                                            <div>
+                                                <label className="block text-sm font-medium text-slate-300 mb-2">서류 결과 공개 마감일 (= 면접 일정 선택 마감)</label>
+                                                <input
+                                                    type="datetime-local"
+                                                    value={documentResultEndDate}
+                                                    onChange={(e) => setDocumentResultEndDate(e.target.value)}
+                                                    className="w-full px-4 py-2 rounded-lg bg-white/5 border border-white/10 text-white focus:outline-none focus:border-comet-blue"
+                                                />
+                                            </div>
+                                        </div>
+                                        <div className="grid grid-cols-2 gap-4">
+                                            <div>
+                                                <label className="block text-sm font-medium text-slate-300 mb-2">면접 일정 공개일</label>
+                                                <input
+                                                    type="datetime-local"
+                                                    value={interviewScheduleDate}
+                                                    onChange={(e) => setInterviewScheduleDate(e.target.value)}
+                                                    className="w-full px-4 py-2 rounded-lg bg-white/5 border border-white/10 text-white focus:outline-none focus:border-comet-blue"
+                                                />
+                                                <p className="text-xs text-slate-400 mt-1">
+                                                    이 날짜 이후 확정된 면접 일정이 지원자에게 표시됩니다.
+                                                </p>
+                                            </div>
+                                            <div>
+                                                <label className="block text-sm font-medium text-slate-300 mb-2">최종 결과 공개일</label>
+                                                <input
+                                                    type="datetime-local"
+                                                    value={finalResultDate}
+                                                    onChange={(e) => setFinalResultDate(e.target.value)}
+                                                    className="w-full px-4 py-2 rounded-lg bg-white/5 border border-white/10 text-white focus:outline-none focus:border-comet-blue"
+                                                />
+                                                <p className="text-xs text-slate-400 mt-1">
+                                                    이 날짜 이후 최종합격 상태가 표시됩니다.
+                                                </p>
+                                            </div>
                                         </div>
                                         <button
                                             onClick={handleSaveSettings}
                                             className="px-6 py-2 rounded-lg bg-comet-blue text-white font-semibold hover:bg-comet-blue/80 transition-all"
                                         >
-                                            저장
+                                            날짜 설정 저장
+                                        </button>
+                                    </div>
+                                </div>
+
+                                {/* 면접 설정 */}
+                                <div className="p-6 rounded-lg bg-white/5 border border-white/10">
+                                    <h3 className="text-white font-semibold mb-4">면접 설정</h3>
+                                    <div className="space-y-4">
+                                        <div>
+                                            <label className="block text-sm font-medium text-slate-300 mb-2">면접 가능 날짜</label>
+                                            <div className="flex flex-wrap gap-2">
+                                                {interviewDates.map((date, idx) => (
+                                                    <div key={idx} className="flex items-center gap-2 px-3 py-1 bg-white/10 rounded-lg">
+                                                        <input
+                                                            type="date"
+                                                            value={date}
+                                                            onChange={(e) => {
+                                                                const newDates = [...interviewDates];
+                                                                newDates[idx] = e.target.value;
+                                                                setInterviewDates(newDates);
+                                                            }}
+                                                            className="bg-transparent text-white text-sm focus:outline-none"
+                                                        />
+                                                        <button
+                                                            onClick={() => setInterviewDates(interviewDates.filter((_, i) => i !== idx))}
+                                                            className="text-red-400 hover:text-red-300"
+                                                        >
+                                                            ×
+                                                        </button>
+                                                    </div>
+                                                ))}
+                                                <button
+                                                    onClick={() => setInterviewDates([...interviewDates, ''])}
+                                                    className="px-3 py-1 bg-white/10 rounded-lg text-slate-300 hover:bg-white/20"
+                                                >
+                                                    + 날짜 추가
+                                                </button>
+                                            </div>
+                                        </div>
+                                        <div className="grid grid-cols-3 gap-4">
+                                            <div>
+                                                <label className="block text-sm font-medium text-slate-300 mb-2">시작 시간</label>
+                                                <input
+                                                    type="time"
+                                                    value={interviewStartTime}
+                                                    onChange={(e) => setInterviewStartTime(e.target.value)}
+                                                    className="w-full px-4 py-2 rounded-lg bg-white/5 border border-white/10 text-white focus:outline-none focus:border-comet-blue"
+                                                />
+                                            </div>
+                                            <div>
+                                                <label className="block text-sm font-medium text-slate-300 mb-2">종료 시간</label>
+                                                <input
+                                                    type="time"
+                                                    value={interviewEndTime}
+                                                    onChange={(e) => setInterviewEndTime(e.target.value)}
+                                                    className="w-full px-4 py-2 rounded-lg bg-white/5 border border-white/10 text-white focus:outline-none focus:border-comet-blue"
+                                                />
+                                            </div>
+                                            <div>
+                                                <label className="block text-sm font-medium text-slate-300 mb-2">시간 간격 (분)</label>
+                                                <select
+                                                    value={interviewInterval}
+                                                    onChange={(e) => setInterviewInterval(Number(e.target.value))}
+                                                    className="w-full px-4 py-2 rounded-lg bg-white/5 border border-white/10 text-white focus:outline-none focus:border-comet-blue"
+                                                >
+                                                    <option value={10}>10분</option>
+                                                    <option value={15}>15분</option>
+                                                    <option value={20}>20분</option>
+                                                    <option value={30}>30분</option>
+                                                </select>
+                                            </div>
+                                        </div>
+                                        <button
+                                            onClick={async () => {
+                                                try {
+                                                    const response = await fetch(`${API_BASE_URL}/api/application/interview-settings`, {
+                                                        method: 'POST',
+                                                        headers: {
+                                                            'Content-Type': 'application/json',
+                                                            Authorization: `Bearer ${token}`
+                                                        },
+                                                        body: JSON.stringify({
+                                                            availableDates: interviewDates.filter(d => d),
+                                                            startTime: interviewStartTime,
+                                                            endTime: interviewEndTime,
+                                                            intervalMinutes: interviewInterval
+                                                        })
+                                                    });
+                                                    const result = await response.json();
+                                                    if (result.success) {
+                                                        setSuccessMsg('면접 설정이 저장되었습니다');
+                                                        setTimeout(() => setSuccessMsg(''), 3000);
+                                                    } else {
+                                                        setErrorMsg(result.message || '저장에 실패했습니다');
+                                                        setTimeout(() => setErrorMsg(''), 3000);
+                                                    }
+                                                } catch (error) {
+                                                    setErrorMsg('면접 설정 저장에 실패했습니다');
+                                                    setTimeout(() => setErrorMsg(''), 3000);
+                                                }
+                                            }}
+                                            className="px-6 py-2 rounded-lg bg-purple-500 text-white font-semibold hover:bg-purple-500/80 transition-all"
+                                        >
+                                            면접 설정 저장
                                         </button>
                                     </div>
                                 </div>
