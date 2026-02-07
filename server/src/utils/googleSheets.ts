@@ -1,4 +1,5 @@
 import { google } from 'googleapis';
+import { Track } from '@prisma/client';
 
 // Google Sheets API 클라이언트 생성
 export async function getGoogleSheetsClient() {
@@ -36,7 +37,7 @@ export function parseFormResponse(row: string[], headers: string[]): {
     studentId: string;
     name: string;
     phoneLastDigits: string;
-    track: 'FRONTEND' | 'BACKEND' | null;
+    track: Track | null;
     content: string;
 } {
     // 헤더에서 인덱스 찾기
@@ -61,11 +62,11 @@ export function parseFormResponse(row: string[], headers: string[]): {
 
     // 트랙 파싱
     const trackValue = row[trackIndex]?.toUpperCase() || '';
-    const track: 'FRONTEND' | 'BACKEND' | 'DESIGN' | 'PM' | null = 
-        trackValue.includes('FRONTEND') || trackValue.includes('프론트') ? 'FRONTEND' : 
-        trackValue.includes('BACKEND') || trackValue.includes('백엔드') ? 'BACKEND' :
-        trackValue.includes('DESIGN') || trackValue.includes('디자인') ? 'DESIGN' :
-        trackValue.includes('PM') || trackValue.includes('기획') ? 'PM' :
+    const track: Track | null = 
+        trackValue.includes('FRONTEND') || trackValue.includes('프론트') ? Track.FRONTEND : 
+        trackValue.includes('BACKEND') || trackValue.includes('백엔드') ? Track.BACKEND :
+        trackValue.includes('DESIGN') || trackValue.includes('디자인') ? Track.DESIGN :
+        trackValue.includes('PM') || trackValue.includes('기획') ? Track.PM :
         null;
 
     return {

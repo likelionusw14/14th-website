@@ -15,7 +15,7 @@ interface ResultData {
 }
 
 const ResultPage = () => {
-    const { register, handleSubmit, formState: { errors }, getValues } = useForm();
+    const { register, handleSubmit, formState: { errors } } = useForm();
     const [result, setResult] = useState<ResultData | null>(null);
     const [errorMsg, setErrorMsg] = useState('');
     const [isLoading, setIsLoading] = useState(false);

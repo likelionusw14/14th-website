@@ -158,7 +158,7 @@ router.post('/login', async (req: Request, res: Response) => {
             // #region agent log
             fetch('http://127.0.0.1:7243/ingest/6b883636-1481-4250-a61b-b80d8e085cc6',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'auth.routes.ts:146',message:'User not found, sending 401',data:{studentId:studentId?.substring(0,3)+'***'},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'H'})}).catch(()=>{});
             // #endregion
-            res.status(401).json({ message: 'Invalid credentials' });
+            res.status(401).json({ message: '등록되지 않은 사용자입니다.' });
             return;
         }
 
@@ -173,7 +173,7 @@ router.post('/login', async (req: Request, res: Response) => {
             // #region agent log
             fetch('http://127.0.0.1:7243/ingest/6b883636-1481-4250-a61b-b80d8e085cc6',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'auth.routes.ts:152',message:'Password mismatch, sending 401',data:{isMatch},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'H'})}).catch(()=>{});
             // #endregion
-            res.status(401).json({ message: 'Invalid credentials' });
+            res.status(401).json({ message: '아이디 또는 비밀번호가 일치하지 않습니다.' });
             return;
         }
 

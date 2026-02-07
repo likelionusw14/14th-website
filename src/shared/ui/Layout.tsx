@@ -8,7 +8,7 @@ const Layout = () => {
     return (
         <div className="min-h-screen text-starlight-white font-sans relative selection:bg-comet-blue selection:text-white">
             <header className="fixed top-0 left-0 right-0 z-50 h-16 flex items-center justify-between px-6 lg:px-12 glass transition-all duration-300">
-                <Link to="/" className="font-bold text-xl tracking-tighter bg-gradient-to-r from-blue-400 to-purple-400 bg-clip-text text-transparent">LIKELION USW</Link>
+                <Link to="/" className="font-bold text-xl tracking-tighter text-gradient-lion">LIKELION USW</Link>
                 <nav className="hidden md:flex gap-8 text-sm font-medium text-slate-300 items-center">
                     <Link to="/" className="hover:text-white transition-colors">동아리 소개</Link>
                     <Link to="/project" className="hover:text-white transition-colors">프로젝트</Link>
@@ -23,11 +23,10 @@ const Layout = () => {
                                 <Link to="/admin" className="hover:text-white transition-colors">관리자</Link>
                             )}
                             <span className="text-white/80">{user.name || user.studentId} ({user.major || 'Lion'})</span>
-                            <span className={`px-2 py-1 rounded text-xs ${
-                                user.role === 'ADMIN' ? 'bg-purple-500/20 text-purple-400' :
-                                user.role === 'BABY_LION' ? 'bg-blue-500/20 text-blue-400' :
-                                'bg-gray-500/20 text-gray-400'
-                            }`}>
+                            <span className={`px-2 py-1 rounded text-xs ${user.role === 'ADMIN' ? 'bg-purple-500/20 text-purple-400' :
+                                    user.role === 'BABY_LION' ? 'bg-blue-500/20 text-blue-400' :
+                                        'bg-gray-500/20 text-gray-400'
+                                }`}>
                                 {user.role === 'ADMIN' ? '운영진' : user.role === 'BABY_LION' ? '아기사자' : '게스트'}
                             </span>
                             <button onClick={logout} className="hover:text-red-400 transition-colors">Logout</button>
