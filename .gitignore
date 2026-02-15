@@ -61,3 +61,5 @@ cloud-sql-proxy.exe
 docs/*
 docs
 scripts
+
+cloudbuild.yaml

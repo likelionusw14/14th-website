@@ -27,6 +27,10 @@ model User {
   name            String?
   major           String?      // Department/Major from Portal
   role            Role         @default(GUEST)
+  profileImage    String?      // 프로필 이미지 URL (GCS)
+  bio             String?      // 한줄소개
+  team            String?      // 운영진 팀 (대표/운영팀/교육팀/홍보팀)
+  track           Track?       // 아기사자 파트
   createdAt       DateTime     @default(now())
   updatedAt       DateTime     @updatedAt
   

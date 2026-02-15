@@ -4,6 +4,7 @@ import dotenv from 'dotenv';
 import authRoutes from './auth/auth.routes';
 import applicationRoutes from './application/application.routes';
 import attendanceRoutes from './attendance/attendance.routes';
+import memberRoutes from './member/member.routes';
 
 dotenv.config();
 
@@ -27,35 +28,35 @@ app.use(cors({
             callback(null, true);
             return;
         }
-        
+
         // 개발 환경에서는 모든 origin 허용
         if (process.env.NODE_ENV === 'development') {
             callback(null, true);
             return;
         }
-        
+
         // 허용된 origin 목록에 있는지 확인
         if (allowedOrigins.includes(origin) || allowedOrigins.some(allowed => origin && origin.includes(allowed))) {
             callback(null, true);
             return;
         }
-        
+
         // Cloud Run URL 패턴 허용 (*.run.app) - NODE_ENV와 관계없이 항상 허용
         if (origin.includes('.run.app')) {
             callback(null, true);
             return;
         }
-        
+
         // usw-likelion.kr 도메인 패턴 허용
         if (origin.includes('usw-likelion.kr')) {
             callback(null, true);
             return;
         }
-        
+
         // 모든 조건을 통과하지 못한 경우 차단
         console.warn(`CORS blocked origin: ${origin}`);
         // #region agent log
-        fetch('http://127.0.0.1:7243/ingest/6b883636-1481-4250-a61b-b80d8e085cc6',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'app.ts:48',message:'CORS blocked',data:{origin,allowedOrigins,nodeEnv:process.env.NODE_ENV},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'N'})}).catch(()=>{});
+        fetch('http://127.0.0.1:7243/ingest/6b883636-1481-4250-a61b-b80d8e085cc6', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ location: 'app.ts:48', message: 'CORS blocked', data: { origin, allowedOrigins, nodeEnv: process.env.NODE_ENV }, timestamp: Date.now(), sessionId: 'debug-session', runId: 'run1', hypothesisId: 'N' }) }).catch(() => { });
         // #endregion
         callback(new Error('Not allowed by CORS'));
     },
@@ -67,7 +68,7 @@ app.use(express.json());
 app.use((err: Error, req: express.Request, res: express.Response, next: express.NextFunction) => {
     console.error('Unhandled error:', err);
     // #region agent log
-    fetch('http://127.0.0.1:7243/ingest/6b883636-1481-4250-a61b-b80d8e085cc6',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'app.ts:42',message:'Unhandled error caught',data:{error:err.message,errorName:err.name,stack:err.stack?.substring(0,200)},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'M'})}).catch(()=>{});
+    fetch('http://127.0.0.1:7243/ingest/6b883636-1481-4250-a61b-b80d8e085cc6', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ location: 'app.ts:42', message: 'Unhandled error caught', data: { error: err.message, errorName: err.name, stack: err.stack?.substring(0, 200) }, timestamp: Date.now(), sessionId: 'debug-session', runId: 'run1', hypothesisId: 'M' }) }).catch(() => { });
     // #endregion
     res.status(500).json({ error: 'Internal server error', message: err.message });
 });
@@ -76,6 +77,7 @@ app.use((err: Error, req: express.Request, res: express.Response, next: express.
 app.use('/api/auth', authRoutes);
 app.use('/api/application', applicationRoutes);
 app.use('/api/attendance', attendanceRoutes);
+app.use('/api/members', memberRoutes);
 
 // SSE Log Stream
 import { logger } from './utils/logger';
@@ -119,13 +121,13 @@ testPrisma.$connect().then(() => {
 }).catch((err) => {
     console.error('Prisma Client initialization failed:', err);
     // #region agent log
-    fetch('http://127.0.0.1:7243/ingest/6b883636-1481-4250-a61b-b80d8e085cc6',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'app.ts:82',message:'Prisma Client init failed',data:{error:err.message,errorName:err.name},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'L'})}).catch(()=>{});
+    fetch('http://127.0.0.1:7243/ingest/6b883636-1481-4250-a61b-b80d8e085cc6', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ location: 'app.ts:82', message: 'Prisma Client init failed', data: { error: err.message, errorName: err.name }, timestamp: Date.now(), sessionId: 'debug-session', runId: 'run1', hypothesisId: 'L' }) }).catch(() => { });
     // #endregion
 });
 
 app.listen(PORT, () => {
     console.log(`Server is running on port ${PORT}`);
     // #region agent log
-    fetch('http://127.0.0.1:7243/ingest/6b883636-1481-4250-a61b-b80d8e085cc6',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'app.ts:90',message:'Server started successfully',data:{port:PORT,nodeEnv:process.env.NODE_ENV},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'K'})}).catch(()=>{});
+    fetch('http://127.0.0.1:7243/ingest/6b883636-1481-4250-a61b-b80d8e085cc6', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ location: 'app.ts:90', message: 'Server started successfully', data: { port: PORT, nodeEnv: process.env.NODE_ENV }, timestamp: Date.now(), sessionId: 'debug-session', runId: 'run1', hypothesisId: 'K' }) }).catch(() => { });
     // #endregion
 });

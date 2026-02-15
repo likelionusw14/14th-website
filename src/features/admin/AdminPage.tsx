@@ -171,11 +171,6 @@ const AdminPage = () => {
     };
 
     const handleSaveSettings = async () => {
-        if (!resultOpenDate) {
-            setErrorMsg('결과 공개일을 입력해주세요');
-            setTimeout(() => setErrorMsg(''), 3000);
-            return;
-        }
 
         try {
             // 기존 설정 저장
@@ -925,21 +920,7 @@ const AdminPage = () => {
                                                 메인 페이지와 지원서 페이지에 표시될 구글폼 링크를 입력하세요.
                                             </p>
                                         </div>
-                                        <div>
-                                            <label className="block text-sm font-medium text-slate-300 mb-2">결과 공개일 (레거시)</label>
-                                            <input
-                                                type="datetime-local"
-                                                value={resultOpenDate ? new Date(resultOpenDate + 'T00:00').toISOString().slice(0, 16) : ''}
-                                                onChange={(e) => {
-                                                    const date = e.target.value;
-                                                    setResultOpenDate(date ? date.split('T')[0] : '');
-                                                }}
-                                                className="w-full px-4 py-2 rounded-lg bg-white/5 border border-white/10 text-white focus:outline-none focus:border-comet-blue"
-                                            />
-                                            <p className="text-xs text-slate-400 mt-1">
-                                                하위 호환용. 새 날짜 필드가 없을 경우 사용됩니다.
-                                            </p>
-                                        </div>
+
                                     </div>
                                 </div>
 
