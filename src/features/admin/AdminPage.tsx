@@ -127,6 +127,17 @@ const AdminPage = () => {
         }
     };
 
+    // UTC -> 로컬 datetime-local 형식 변환 (KST 반영)
+    const toLocalDatetimeString = (isoStr: string) => {
+        const d = new Date(isoStr);
+        const year = d.getFullYear();
+        const month = String(d.getMonth() + 1).padStart(2, '0');
+        const day = String(d.getDate()).padStart(2, '0');
+        const hours = String(d.getHours()).padStart(2, '0');
+        const minutes = String(d.getMinutes()).padStart(2, '0');
+        return `${year}-${month}-${day}T${hours}:${minutes}`;
+    };
+
     const fetchSettings = async () => {
         try {
             // 기존 설정 가져오기
@@ -139,18 +150,18 @@ const AdminPage = () => {
                 setResultOpenDate(date.toISOString().split('T')[0]);
                 setGoogleFormUrl(result.settings.googleFormUrl || '');
 
-                // 새로운 날짜 필드
+                // 새로운 날짜 필드 - 로컬 시간으로 변환하여 표시
                 if (result.settings.documentResultStartDate) {
-                    setDocumentResultStartDate(new Date(result.settings.documentResultStartDate).toISOString().slice(0, 16));
+                    setDocumentResultStartDate(toLocalDatetimeString(result.settings.documentResultStartDate));
                 }
                 if (result.settings.documentResultEndDate) {
-                    setDocumentResultEndDate(new Date(result.settings.documentResultEndDate).toISOString().slice(0, 16));
+                    setDocumentResultEndDate(toLocalDatetimeString(result.settings.documentResultEndDate));
                 }
                 if (result.settings.interviewScheduleDate) {
-                    setInterviewScheduleDate(new Date(result.settings.interviewScheduleDate).toISOString().slice(0, 16));
+                    setInterviewScheduleDate(toLocalDatetimeString(result.settings.interviewScheduleDate));
                 }
                 if (result.settings.finalResultDate) {
-                    setFinalResultDate(new Date(result.settings.finalResultDate).toISOString().slice(0, 16));
+                    setFinalResultDate(toLocalDatetimeString(result.settings.finalResultDate));
                 }
             }
 
@@ -170,6 +181,12 @@ const AdminPage = () => {
         }
     };
 
+    // datetime-local 값을 ISO 문자열로 변환 (로컬 시간 -> UTC ISO)
+    const toISOFromLocal = (localStr: string | null) => {
+        if (!localStr) return null;
+        return new Date(localStr).toISOString();
+    };
+
     const handleSaveSettings = async () => {
 
         try {
@@ -183,10 +200,10 @@ const AdminPage = () => {
                 body: JSON.stringify({
                     resultOpenDate,
                     googleFormUrl: googleFormUrl || null,
-                    documentResultStartDate: documentResultStartDate || null,
-                    documentResultEndDate: documentResultEndDate || null,
-                    interviewScheduleDate: interviewScheduleDate || null,
-                    finalResultDate: finalResultDate || null
+                    documentResultStartDate: toISOFromLocal(documentResultStartDate),
+                    documentResultEndDate: toISOFromLocal(documentResultEndDate),
+                    interviewScheduleDate: toISOFromLocal(interviewScheduleDate),
+                    finalResultDate: toISOFromLocal(finalResultDate)
                 })
             });
             const result = await response.json();

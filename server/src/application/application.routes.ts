@@ -256,14 +256,17 @@ router.post('/result', async (req: Request, res: Response) => {
         const now = new Date();
 
         // 단계별 결과 공개 체크
+        const hasNewDateSettings = !!settings?.documentResultStartDate;
         const canViewDocumentResult = settings?.documentResultStartDate && now >= settings.documentResultStartDate;
         const canSelectInterviewTime = settings?.documentResultStartDate && settings?.documentResultEndDate &&
             now >= settings.documentResultStartDate && now <= settings.documentResultEndDate;
         const canViewInterviewSchedule = settings?.interviewScheduleDate && now >= settings.interviewScheduleDate;
         const canViewFinalResult = settings?.finalResultDate && now >= settings.finalResultDate;
 
-        // 하위 호환: 새 설정이 없으면 기존 resultOpenDate 사용
-        const canViewAnyResult = canViewDocumentResult || (settings?.resultOpenDate && now >= settings.resultOpenDate);
+        // 새 날짜 설정이 있으면 그것만 사용, 없으면 기존 resultOpenDate 사용
+        const canViewAnyResult = hasNewDateSettings
+            ? canViewDocumentResult
+            : (settings?.resultOpenDate && now >= settings.resultOpenDate);
 
         if (!canViewAnyResult) {
             res.status(403).json({

@@ -51,7 +51,9 @@ const ResultPage = () => {
                     phoneLastDigits: data.phoneLastDigits
                 });
             } else {
-                if (resultData.resultOpenDate) {
+                if (resultData.documentResultStartDate) {
+                    setResultOpenDate(resultData.documentResultStartDate);
+                } else if (resultData.resultOpenDate) {
                     setResultOpenDate(resultData.resultOpenDate);
                 }
                 setErrorMsg(resultData.message || '결과를 찾을 수 없습니다');
@@ -120,7 +122,13 @@ const ResultPage = () => {
 
                     {resultOpenDate && (
                         <div className="p-4 rounded-lg bg-yellow-500/10 border border-yellow-500/20 text-yellow-300 mb-6">
-                            결과 공개일: {new Date(resultOpenDate).toLocaleDateString('ko-KR')}
+                            결과 공개 예정일: {new Date(resultOpenDate).toLocaleDateString('ko-KR', {
+                                year: 'numeric',
+                                month: 'long',
+                                day: 'numeric',
+                                hour: '2-digit',
+                                minute: '2-digit'
+                            })}
                         </div>
                     )}
 
@@ -156,7 +164,7 @@ const ResultPage = () => {
                             <div>
                                 <label className="block text-sm font-medium text-slate-300 mb-2">전화번호 뒷자리 (4자리)</label>
                                 <input
-                                    {...register('phoneLastDigits', { 
+                                    {...register('phoneLastDigits', {
                                         required: '전화번호 뒷자리를 입력해주세요',
                                         pattern: {
                                             value: /^\d{4}$/,
@@ -196,9 +204,9 @@ const ResultPage = () => {
                                         <div className="p-6 rounded-lg bg-green-500/10 border border-green-500/20">
                                             <h3 className="text-white font-semibold mb-4">확정된 면접 일정</h3>
                                             <div className="text-lg text-green-300">
-                                                {new Date(result.confirmedInterviewDate).toLocaleDateString('ko-KR', { 
-                                                    year: 'numeric', 
-                                                    month: 'long', 
+                                                {new Date(result.confirmedInterviewDate).toLocaleDateString('ko-KR', {
+                                                    year: 'numeric',
+                                                    month: 'long',
                                                     day: 'numeric',
                                                     weekday: 'long'
                                                 })} {result.confirmedInterviewTime}
