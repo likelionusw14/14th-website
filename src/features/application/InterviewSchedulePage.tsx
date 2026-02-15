@@ -176,144 +176,151 @@ const InterviewSchedulePage = () => {
                     <h1 className="text-3xl font-bold text-white mb-2">면접 일정 선택</h1>
                     <p className="text-slate-400 mb-8">합격하신 분은 면접 일정을 선택해주세요. 3개의 시간 후보를 우선순위로 선택해주세요.</p>
 
-                    <motion.form
-                        initial={{ opacity: 0 }}
-                        animate={{ opacity: 1 }}
-                        onSubmit={handleSubmit(onSubmit)}
-                        className="space-y-6"
-                    >
-                        {/* 인증 정보 (URL 파라미터가 없을 때만 표시) */}
-                        {!hasUserInfo && (
-                            <div className="p-4 rounded-lg bg-white/5 border border-white/10">
-                                <h3 className="text-white font-semibold mb-4">본인 확인</h3>
-                                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                                    <div>
-                                        <label className="block text-sm font-medium text-slate-300 mb-2">학번</label>
-                                        <input
-                                            {...register('studentId', { required: '학번을 입력해주세요' })}
-                                            type="text"
-                                            className="w-full px-4 py-2 rounded-lg bg-white/5 border border-white/10 text-white placeholder-slate-500 focus:outline-none focus:border-comet-blue"
-                                            placeholder="2024123456"
-                                        />
-                                        {errors.studentId && <span className="text-red-400 text-xs mt-1">{errors.studentId.message as string}</span>}
-                                    </div>
+                    {isLoading ? (
+                        <div className="text-center py-8">
+                            <div className="text-slate-400">면접 일정을 불러오는 중...</div>
+                        </div>
+                    ) : (
 
-                                    <div>
-                                        <label className="block text-sm font-medium text-slate-300 mb-2">이름</label>
-                                        <input
-                                            {...register('name', { required: '이름을 입력해주세요' })}
-                                            type="text"
-                                            className="w-full px-4 py-2 rounded-lg bg-white/5 border border-white/10 text-white placeholder-slate-500 focus:outline-none focus:border-comet-blue"
-                                            placeholder="홍길동"
-                                        />
-                                        {errors.name && <span className="text-red-400 text-xs mt-1">{errors.name.message as string}</span>}
-                                    </div>
+                        <motion.form
+                            initial={{ opacity: 0 }}
+                            animate={{ opacity: 1 }}
+                            onSubmit={handleSubmit(onSubmit)}
+                            className="space-y-6"
+                        >
+                            {/* 인증 정보 (URL 파라미터가 없을 때만 표시) */}
+                            {!hasUserInfo && (
+                                <div className="p-4 rounded-lg bg-white/5 border border-white/10">
+                                    <h3 className="text-white font-semibold mb-4">본인 확인</h3>
+                                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                                        <div>
+                                            <label className="block text-sm font-medium text-slate-300 mb-2">학번</label>
+                                            <input
+                                                {...register('studentId', { required: '학번을 입력해주세요' })}
+                                                type="text"
+                                                className="w-full px-4 py-2 rounded-lg bg-white/5 border border-white/10 text-white placeholder-slate-500 focus:outline-none focus:border-comet-blue"
+                                                placeholder="2024123456"
+                                            />
+                                            {errors.studentId && <span className="text-red-400 text-xs mt-1">{errors.studentId.message as string}</span>}
+                                        </div>
 
-                                    <div>
-                                        <label className="block text-sm font-medium text-slate-300 mb-2">전화번호 뒷자리</label>
-                                        <input
-                                            {...register('phoneLastDigits', {
-                                                required: '전화번호 뒷자리를 입력해주세요',
-                                                pattern: {
-                                                    value: /^\d{4}$/,
-                                                    message: '4자리 숫자를 입력해주세요'
-                                                }
-                                            })}
-                                            type="text"
-                                            maxLength={4}
-                                            className="w-full px-4 py-2 rounded-lg bg-white/5 border border-white/10 text-white placeholder-slate-500 focus:outline-none focus:border-comet-blue"
-                                            placeholder="1234"
-                                        />
-                                        {errors.phoneLastDigits && <span className="text-red-400 text-xs mt-1">{errors.phoneLastDigits.message as string}</span>}
-                                    </div>
-                                </div>
-                            </div>
-                        )}
+                                        <div>
+                                            <label className="block text-sm font-medium text-slate-300 mb-2">이름</label>
+                                            <input
+                                                {...register('name', { required: '이름을 입력해주세요' })}
+                                                type="text"
+                                                className="w-full px-4 py-2 rounded-lg bg-white/5 border border-white/10 text-white placeholder-slate-500 focus:outline-none focus:border-comet-blue"
+                                                placeholder="홍길동"
+                                            />
+                                            {errors.name && <span className="text-red-400 text-xs mt-1">{errors.name.message as string}</span>}
+                                        </div>
 
-                        {/* 면접 일정 선택 (각 순위마다 날짜와 시간 선택) */}
-                        <div>
-                            <label className="block text-sm font-medium text-slate-300 mb-4">면접 일정 선택 (3개의 후보를 우선순위로 선택)</label>
-                            <div className="space-y-4">
-                                {[1, 2, 3].map((priority) => (
-                                    <div key={priority} className="p-4 rounded-lg bg-white/5 border border-white/10">
-                                        <label className="block text-sm font-medium text-slate-300 mb-3">
-                                            {priority}순위 일정 선택
-                                        </label>
-                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                            <div>
-                                                <label className="block text-xs text-slate-400 mb-2">날짜</label>
-                                                <select
-                                                    {...register(`date${priority}` as any, {
-                                                        required: `${priority}순위 날짜를 선택해주세요`
-                                                    })}
-                                                    className="w-full px-4 py-2 rounded-lg bg-white/5 border border-white/10 text-white focus:outline-none focus:border-comet-blue"
-                                                >
-                                                    <option value="">날짜 선택</option>
-                                                    {dateOptions.map((option) => (
-                                                        <option key={option.value} value={option.value}>
-                                                            {option.label}
-                                                        </option>
-                                                    ))}
-                                                </select>
-                                                {errors[`date${priority}` as any] && (
-                                                    <span className="text-red-400 text-xs mt-1">
-                                                        {errors[`date${priority}` as any]?.message as string}
-                                                    </span>
-                                                )}
-                                            </div>
-                                            <div>
-                                                <label className="block text-xs text-slate-400 mb-2">시간</label>
-                                                <select
-                                                    {...register(`time${priority}` as any, {
-                                                        required: `${priority}순위 시간을 선택해주세요`,
-                                                        validate: (value, formValues) => {
-                                                            const currentDate = formValues[`date${priority}` as any];
-                                                            const currentTime = value;
-                                                            // 다른 순위와 중복 확인
-                                                            for (let i = 1; i <= 3; i++) {
-                                                                if (i !== priority) {
-                                                                    const otherDate = formValues[`date${i}` as any];
-                                                                    const otherTime = formValues[`time${i}` as any];
-                                                                    if (otherDate === currentDate && otherTime === currentTime) {
-                                                                        return '중복된 일정을 선택할 수 없습니다';
-                                                                    }
-                                                                }
-                                                            }
-                                                            return true;
-                                                        }
-                                                    })}
-                                                    className="w-full px-4 py-2 rounded-lg bg-white/5 border border-white/10 text-white focus:outline-none focus:border-comet-blue"
-                                                >
-                                                    <option value="">시간 선택</option>
-                                                    {timeOptions.map((time) => (
-                                                        <option key={time} value={time}>
-                                                            {time}
-                                                        </option>
-                                                    ))}
-                                                </select>
-                                                {errors[`time${priority}` as any] && (
-                                                    <span className="text-red-400 text-xs mt-1">
-                                                        {errors[`time${priority}` as any]?.message as string}
-                                                    </span>
-                                                )}
-                                            </div>
+                                        <div>
+                                            <label className="block text-sm font-medium text-slate-300 mb-2">전화번호 뒷자리</label>
+                                            <input
+                                                {...register('phoneLastDigits', {
+                                                    required: '전화번호 뒷자리를 입력해주세요',
+                                                    pattern: {
+                                                        value: /^\d{4}$/,
+                                                        message: '4자리 숫자를 입력해주세요'
+                                                    }
+                                                })}
+                                                type="text"
+                                                maxLength={4}
+                                                className="w-full px-4 py-2 rounded-lg bg-white/5 border border-white/10 text-white placeholder-slate-500 focus:outline-none focus:border-comet-blue"
+                                                placeholder="1234"
+                                            />
+                                            {errors.phoneLastDigits && <span className="text-red-400 text-xs mt-1">{errors.phoneLastDigits.message as string}</span>}
                                         </div>
                                     </div>
-                                ))}
+                                </div>
+                            )}
+
+                            {/* 면접 일정 선택 (각 순위마다 날짜와 시간 선택) */}
+                            <div>
+                                <label className="block text-sm font-medium text-slate-300 mb-4">면접 일정 선택 (3개의 후보를 우선순위로 선택)</label>
+                                <div className="space-y-4">
+                                    {[1, 2, 3].map((priority) => (
+                                        <div key={priority} className="p-4 rounded-lg bg-white/5 border border-white/10">
+                                            <label className="block text-sm font-medium text-slate-300 mb-3">
+                                                {priority}순위 일정 선택
+                                            </label>
+                                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                                <div>
+                                                    <label className="block text-xs text-slate-400 mb-2">날짜</label>
+                                                    <select
+                                                        {...register(`date${priority}` as any, {
+                                                            required: `${priority}순위 날짜를 선택해주세요`
+                                                        })}
+                                                        className="w-full px-4 py-2 rounded-lg bg-white/5 border border-white/10 text-white focus:outline-none focus:border-comet-blue"
+                                                    >
+                                                        <option value="">날짜 선택</option>
+                                                        {dateOptions.map((option) => (
+                                                            <option key={option.value} value={option.value}>
+                                                                {option.label}
+                                                            </option>
+                                                        ))}
+                                                    </select>
+                                                    {errors[`date${priority}` as any] && (
+                                                        <span className="text-red-400 text-xs mt-1">
+                                                            {errors[`date${priority}` as any]?.message as string}
+                                                        </span>
+                                                    )}
+                                                </div>
+                                                <div>
+                                                    <label className="block text-xs text-slate-400 mb-2">시간</label>
+                                                    <select
+                                                        {...register(`time${priority}` as any, {
+                                                            required: `${priority}순위 시간을 선택해주세요`,
+                                                            validate: (value, formValues) => {
+                                                                const currentDate = formValues[`date${priority}` as any];
+                                                                const currentTime = value;
+                                                                // 다른 순위와 중복 확인
+                                                                for (let i = 1; i <= 3; i++) {
+                                                                    if (i !== priority) {
+                                                                        const otherDate = formValues[`date${i}` as any];
+                                                                        const otherTime = formValues[`time${i}` as any];
+                                                                        if (otherDate === currentDate && otherTime === currentTime) {
+                                                                            return '중복된 일정을 선택할 수 없습니다';
+                                                                        }
+                                                                    }
+                                                                }
+                                                                return true;
+                                                            }
+                                                        })}
+                                                        className="w-full px-4 py-2 rounded-lg bg-white/5 border border-white/10 text-white focus:outline-none focus:border-comet-blue"
+                                                    >
+                                                        <option value="">시간 선택</option>
+                                                        {timeOptions.map((time) => (
+                                                            <option key={time} value={time}>
+                                                                {time}
+                                                            </option>
+                                                        ))}
+                                                    </select>
+                                                    {errors[`time${priority}` as any] && (
+                                                        <span className="text-red-400 text-xs mt-1">
+                                                            {errors[`time${priority}` as any]?.message as string}
+                                                        </span>
+                                                    )}
+                                                </div>
+                                            </div>
+                                        </div>
+                                    ))}
+                                </div>
                             </div>
-                        </div>
 
-                        {errorMsg && <div className="p-3 rounded bg-red-500/20 text-red-300 text-xs">{errorMsg}</div>}
-                        {successMsg && <div className="p-3 rounded bg-green-500/20 text-green-300 text-xs">{successMsg}</div>}
+                            {errorMsg && <div className="p-3 rounded bg-red-500/20 text-red-300 text-xs">{errorMsg}</div>}
+                            {successMsg && <div className="p-3 rounded bg-green-500/20 text-green-300 text-xs">{successMsg}</div>}
 
-                        <button
-                            type="submit"
-                            disabled={isSubmitting}
-                            className="w-full py-3 bg-gradient-to-r from-comet-blue to-nebula-purple rounded-lg text-white font-bold hover:shadow-[0_0_15px_rgba(139,92,246,0.5)] transition-all disabled:opacity-50"
-                        >
-                            {isSubmitting ? '제출 중...' : '면접 일정 제출'}
-                        </button>
-                    </motion.form>
+                            <button
+                                type="submit"
+                                disabled={isSubmitting}
+                                className="w-full py-3 bg-gradient-to-r from-comet-blue to-nebula-purple rounded-lg text-white font-bold hover:shadow-[0_0_15px_rgba(139,92,246,0.5)] transition-all disabled:opacity-50"
+                            >
+                                {isSubmitting ? '제출 중...' : '면접 일정 제출'}
+                            </button>
+                        </motion.form>
+                    )}
                 </motion.div>
             </div>
         </div>
