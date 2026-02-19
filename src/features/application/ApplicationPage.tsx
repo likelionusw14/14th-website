@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import StarBackground from '../../shared/ui/StarBackground';
 import { API_BASE_URL } from '../../shared/context/AuthContext';
+import { Card, CardContent } from '@/shared/ui/shadcn/card';
 
 interface ScheduleData {
     applicationStartDate: string | null;
@@ -200,110 +201,116 @@ const ApplicationPage = () => {
 
                         {/* 모집 일정 타임라인 */}
                         {scheduleSteps.length > 0 && (
-                            <div className="p-6 rounded-lg bg-white/5 border border-white/10">
-                                <h3 className="text-white font-semibold mb-5">📅 모집 일정</h3>
-                                <div className="relative">
-                                    {/* 세로 연결선 */}
-                                    <div className="absolute left-[18px] top-2 bottom-2 w-0.5 bg-white/10" />
+                            <Card className="bg-white/5 border-white/10">
+                                <CardContent className="pt-6">
+                                    <h3 className="text-white font-semibold mb-5">📅 모집 일정</h3>
+                                    <div className="relative">
+                                        {/* 세로 연결선 */}
+                                        <div className="absolute left-[18px] top-2 bottom-2 w-0.5 bg-white/10" />
 
-                                    <div className="space-y-5">
-                                        {scheduleSteps.map((step, idx) => {
-                                            const status = getStepStatus(step.date);
-                                            const isPast = status === 'past';
-                                            const isCurrent = idx === 0
-                                                ? appStatus === 'open'
-                                                : (isPast && idx < scheduleSteps.length - 1 && getStepStatus(scheduleSteps[idx + 1].date) === 'upcoming');
+                                        <div className="space-y-5">
+                                            {scheduleSteps.map((step, idx) => {
+                                                const status = getStepStatus(step.date);
+                                                const isPast = status === 'past';
+                                                const isCurrent = idx === 0
+                                                    ? appStatus === 'open'
+                                                    : (isPast && idx < scheduleSteps.length - 1 && getStepStatus(scheduleSteps[idx + 1].date) === 'upcoming');
 
-                                            return (
-                                                <div key={idx} className="flex items-start gap-4 relative">
-                                                    {/* 타임라인 점 */}
-                                                    <div className={`w-9 h-9 rounded-full flex items-center justify-center text-sm shrink-0 z-10 ${isCurrent
+                                                return (
+                                                    <div key={idx} className="flex items-start gap-4 relative">
+                                                        {/* 타임라인 점 */}
+                                                        <div className={`w-9 h-9 rounded-full flex items-center justify-center text-sm shrink-0 z-10 ${isCurrent
                                                             ? 'bg-comet-blue ring-2 ring-comet-blue/40 ring-offset-2 ring-offset-transparent'
                                                             : isPast
                                                                 ? 'bg-green-500/20 border border-green-500/40'
                                                                 : 'bg-white/5 border border-white/20'
-                                                        }`}>
-                                                        {step.icon}
-                                                    </div>
-                                                    <div className="flex-1 pb-1">
-                                                        <div className={`font-semibold text-sm ${isCurrent ? 'text-comet-blue' : isPast ? 'text-green-400' : 'text-slate-300'
                                                             }`}>
-                                                            {step.label}
-                                                            {isCurrent && (
-                                                                <span className="ml-2 inline-block px-2 py-0.5 text-xs rounded-full bg-comet-blue/20 text-comet-blue animate-pulse">
-                                                                    진행 중
-                                                                </span>
-                                                            )}
+                                                            {step.icon}
                                                         </div>
-                                                        <div className="text-xs text-slate-500 mt-1">
-                                                            {formatDate(step.date)}
-                                                            {'endDate' in step && step.endDate && (
-                                                                <span> ~ {formatDate(step.endDate)}</span>
-                                                            )}
+                                                        <div className="flex-1 pb-1">
+                                                            <div className={`font-semibold text-sm ${isCurrent ? 'text-comet-blue' : isPast ? 'text-green-400' : 'text-slate-300'
+                                                                }`}>
+                                                                {step.label}
+                                                                {isCurrent && (
+                                                                    <span className="ml-2 inline-block px-2 py-0.5 text-xs rounded-full bg-comet-blue/20 text-comet-blue animate-pulse">
+                                                                        진행 중
+                                                                    </span>
+                                                                )}
+                                                            </div>
+                                                            <div className="text-xs text-slate-500 mt-1">
+                                                                {formatDate(step.date)}
+                                                                {'endDate' in step && step.endDate && (
+                                                                    <span> ~ {formatDate(step.endDate)}</span>
+                                                                )}
+                                                            </div>
                                                         </div>
                                                     </div>
-                                                </div>
-                                            );
-                                        })}
+                                                );
+                                            })}
+                                        </div>
                                     </div>
-                                </div>
-                            </div>
+                                </CardContent>
+                            </Card>
                         )}
 
                         {/* 지원하기 섹션 */}
-                        <div className="p-6 rounded-lg bg-white/5 border border-white/10">
-                            <h3 className="text-white font-semibold mb-4">지원 방법</h3>
+                        <Card className="bg-white/5 border-white/10">
+                            <CardContent className="pt-6">
+                                <h3 className="text-white font-semibold mb-4">지원 방법</h3>
 
-                            {appStatus === 'before' ? (
-                                <div className="w-full py-4 bg-blue-500/20 rounded-lg text-blue-300 text-center font-semibold">
-                                    🕐 곧 모집이 시작됩니다!
-                                </div>
-                            ) : appStatus === 'closed' ? (
-                                <div className="w-full py-4 bg-gray-500/20 rounded-lg text-gray-400 text-center">
-                                    모집이 마감되었습니다.
-                                </div>
-                            ) : (
-                                <>
-                                    <p className="text-slate-300 mb-6">
-                                        아래 버튼을 클릭하여 구글폼으로 이동하여 지원서를 제출해주세요.
-                                        <br />
-                                        지원서 제출 후 관리자가 검토하여 합/불 결과를 공개합니다.
-                                    </p>
+                                {appStatus === 'before' ? (
+                                    <div className="w-full py-4 bg-blue-500/20 rounded-lg text-blue-300 text-center font-semibold">
+                                        🕐 곧 모집이 시작됩니다!
+                                    </div>
+                                ) : appStatus === 'closed' ? (
+                                    <div className="w-full py-4 bg-gray-500/20 rounded-lg text-gray-400 text-center">
+                                        모집이 마감되었습니다.
+                                    </div>
+                                ) : (
+                                    <>
+                                        <p className="text-slate-300 mb-6">
+                                            아래 버튼을 클릭하여 구글폼으로 이동하여 지원서를 제출해주세요.
+                                            <br />
+                                            지원서 제출 후 관리자가 검토하여 합/불 결과를 공개합니다.
+                                        </p>
 
-                                    {isLoading ? (
-                                        <div className="w-full py-4 bg-gray-500/20 rounded-lg text-gray-400 text-center">
-                                            로딩 중...
-                                        </div>
-                                    ) : googleFormUrl ? (
-                                        <a
-                                            href={googleFormUrl}
-                                            target="_blank"
-                                            rel="noopener noreferrer"
-                                            className="inline-block w-full py-4 bg-gradient-to-r from-comet-blue to-nebula-purple rounded-lg text-white font-bold hover:shadow-[0_0_15px_rgba(139,92,246,0.5)] transition-all text-center"
-                                        >
-                                            구글폼으로 지원하기 →
-                                        </a>
-                                    ) : (
-                                        <div className="w-full py-4 bg-yellow-500/20 rounded-lg text-yellow-300 text-center">
-                                            구글폼 링크가 설정되지 않았습니다. 관리자에게 문의하세요.
-                                        </div>
-                                    )}
-                                </>
-                            )}
-                        </div>
+                                        {isLoading ? (
+                                            <div className="w-full py-4 bg-gray-500/20 rounded-lg text-gray-400 text-center">
+                                                로딩 중...
+                                            </div>
+                                        ) : googleFormUrl ? (
+                                            <a
+                                                href={googleFormUrl}
+                                                target="_blank"
+                                                rel="noopener noreferrer"
+                                                className="inline-block w-full py-4 bg-gradient-to-r from-comet-blue to-nebula-purple rounded-lg text-white font-bold hover:shadow-[0_0_15px_rgba(139,92,246,0.5)] transition-all text-center"
+                                            >
+                                                구글폼으로 지원하기 →
+                                            </a>
+                                        ) : (
+                                            <div className="w-full py-4 bg-yellow-500/20 rounded-lg text-yellow-300 text-center">
+                                                구글폼 링크가 설정되지 않았습니다. 관리자에게 문의하세요.
+                                            </div>
+                                        )}
+                                    </>
+                                )}
+                            </CardContent>
+                        </Card>
 
-                        <div className="p-6 rounded-lg bg-blue-500/10 border border-blue-500/20">
-                            <h3 className="text-white font-semibold mb-2">지원 결과 확인</h3>
-                            <p className="text-slate-300 mb-4">
-                                지원 결과는 공개일 이후에 확인할 수 있습니다.
-                            </p>
-                            <a
-                                href="/result"
-                                className="inline-block px-6 py-3 bg-comet-blue text-white rounded-lg font-semibold hover:bg-comet-blue/80 transition-all"
-                            >
-                                결과 조회하기
-                            </a>
-                        </div>
+                        <Card className="bg-blue-500/10 border-blue-500/20">
+                            <CardContent className="pt-6">
+                                <h3 className="text-white font-semibold mb-2">지원 결과 확인</h3>
+                                <p className="text-slate-300 mb-4">
+                                    지원 결과는 공개일 이후에 확인할 수 있습니다.
+                                </p>
+                                <a
+                                    href="/result"
+                                    className="inline-block px-6 py-3 bg-comet-blue text-white rounded-lg font-semibold hover:bg-comet-blue/80 transition-all"
+                                >
+                                    결과 조회하기
+                                </a>
+                            </CardContent>
+                        </Card>
                     </div>
                 </motion.div>
             </div>

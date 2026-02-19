@@ -2,6 +2,9 @@ import { useState } from 'react';
 import { motion } from 'framer-motion';
 import { useForm } from 'react-hook-form';
 import { API_BASE_URL } from '../../../shared/context/AuthContext';
+import { Input } from '@/shared/ui/shadcn/input';
+import { Button } from '@/shared/ui/shadcn/button';
+import { Label } from '@/shared/ui/shadcn/label';
 
 interface PortalVerificationProps {
     onVerified: (token: string, studentId: string, name: string) => void;
@@ -41,36 +44,37 @@ const PortalVerificationForm = ({ onVerified }: PortalVerificationProps) => {
             <h2 className="text-2xl font-bold text-center text-white mb-2">포털 인증</h2>
             <p className="text-center text-slate-400 text-sm mb-6">수원대학교 포털 계정으로 본인 인증을 진행합니다.</p>
 
-            <div>
-                <label className="block text-sm font-medium text-slate-300 mb-1">학번</label>
-                <input
+            <div className="space-y-2">
+                <Label htmlFor="studentId">학번</Label>
+                <Input
+                    id="studentId"
                     {...register('studentId', { required: '학번을 입력해주세요' })}
-                    className="w-full px-4 py-3 rounded-lg bg-white/5 border border-white/10 text-white placeholder-slate-500 focus:outline-none focus:border-comet-blue focus:ring-1 focus:ring-comet-blue transition-all"
                     placeholder="22000000"
                 />
-                {errors.studentId && <span className="text-red-400 text-xs mt-1">{errors.studentId.message as string}</span>}
+                {errors.studentId && <span className="text-red-400 text-xs">{errors.studentId.message as string}</span>}
             </div>
 
-            <div>
-                <label className="block text-sm font-medium text-slate-300 mb-1">포털 비밀번호</label>
-                <input
+            <div className="space-y-2">
+                <Label htmlFor="portalPassword">포털 비밀번호</Label>
+                <Input
+                    id="portalPassword"
                     type="password"
                     {...register('portalPassword', { required: '비밀번호를 입력해주세요' })}
-                    className="w-full px-4 py-3 rounded-lg bg-white/5 border border-white/10 text-white placeholder-slate-500 focus:outline-none focus:border-comet-blue focus:ring-1 focus:ring-comet-blue transition-all"
                     placeholder="********"
                 />
-                {errors.portalPassword && <span className="text-red-400 text-xs mt-1">{errors.portalPassword.message as string}</span>}
+                {errors.portalPassword && <span className="text-red-400 text-xs">{errors.portalPassword.message as string}</span>}
             </div>
 
             {errorMsg && <div className="p-3 rounded bg-red-500/20 text-red-300 text-xs">{errorMsg}</div>}
 
-            <button
+            <Button
                 type="submit"
                 disabled={isSubmitting}
-                className="w-full py-3 bg-gradient-to-r from-comet-blue to-nebula-purple rounded-lg text-white font-bold hover:shadow-[0_0_15px_rgba(139,92,246,0.5)] transition-all disabled:opacity-50"
+                className="w-full bg-gradient-to-r from-comet-blue to-nebula-purple hover:from-comet-blue/90 hover:to-nebula-purple/90"
+                size="lg"
             >
                 {isSubmitting ? '인증 확인 중...' : '인증하기'}
-            </button>
+            </Button>
         </motion.form>
     );
 };
