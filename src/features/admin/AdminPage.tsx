@@ -71,6 +71,8 @@ const AdminPage = () => {
     const [editingTrackAppId, setEditingTrackAppId] = useState<number | null>(null);
 
     // 새로운 날짜 설정
+    const [applicationStartDate, setApplicationStartDate] = useState('');
+    const [applicationEndDate, setApplicationEndDate] = useState('');
     const [documentResultStartDate, setDocumentResultStartDate] = useState('');
     const [documentResultEndDate, setDocumentResultEndDate] = useState('');
     const [interviewScheduleDate, setInterviewScheduleDate] = useState('');
@@ -151,6 +153,12 @@ const AdminPage = () => {
                 setGoogleFormUrl(result.settings.googleFormUrl || '');
 
                 // 새로운 날짜 필드 - 로컬 시간으로 변환하여 표시
+                if (result.settings.applicationStartDate) {
+                    setApplicationStartDate(toLocalDatetimeString(result.settings.applicationStartDate));
+                }
+                if (result.settings.applicationEndDate) {
+                    setApplicationEndDate(toLocalDatetimeString(result.settings.applicationEndDate));
+                }
                 if (result.settings.documentResultStartDate) {
                     setDocumentResultStartDate(toLocalDatetimeString(result.settings.documentResultStartDate));
                 }
@@ -200,6 +208,8 @@ const AdminPage = () => {
                 body: JSON.stringify({
                     resultOpenDate,
                     googleFormUrl: googleFormUrl || null,
+                    applicationStartDate: toISOFromLocal(applicationStartDate),
+                    applicationEndDate: toISOFromLocal(applicationEndDate),
                     documentResultStartDate: toISOFromLocal(documentResultStartDate),
                     documentResultEndDate: toISOFromLocal(documentResultEndDate),
                     interviewScheduleDate: toISOFromLocal(interviewScheduleDate),
@@ -372,6 +382,32 @@ const AdminPage = () => {
                 setTimeout(() => setSuccessMsg(''), 3000);
             } else {
                 setErrorMsg(result.message || '처리 실패');
+                setTimeout(() => setErrorMsg(''), 3000);
+            }
+        } catch (err) {
+            setErrorMsg('서버 오류가 발생했습니다.');
+            setTimeout(() => setErrorMsg(''), 3000);
+        }
+    };
+
+    const handleDeleteApplication = async (applicationId: number) => {
+        if (!confirm('정말로 이 지원서를 삭제하시겠습니까? 이 작업은 되돌릴 수 없습니다.')) return;
+
+        try {
+            const response = await fetch(`${API_BASE_URL}/api/application/${applicationId}`, {
+                method: 'DELETE',
+                headers: {
+                    Authorization: `Bearer ${token}`
+                }
+            });
+            const result = await response.json();
+
+            if (result.success) {
+                setSuccessMsg('지원서가 삭제되었습니다.');
+                fetchApplications();
+                setTimeout(() => setSuccessMsg(''), 3000);
+            } else {
+                setErrorMsg(result.message || '삭제 실패');
                 setTimeout(() => setErrorMsg(''), 3000);
             }
         } catch (err) {
@@ -878,40 +914,49 @@ const AdminPage = () => {
                                             )}
 
                                             {/* 상태 변경 버튼 */}
-                                            {app.status === 'PENDING' && (
-                                                <div className="flex gap-2">
-                                                    <button
-                                                        onClick={() => handleApplicationStatus(app.id, 'DOCUMENT_APPROVED')}
-                                                        className="px-4 py-2 rounded-lg bg-blue-500/20 text-blue-400 hover:bg-blue-500/30 transition-all font-semibold"
-                                                    >
-                                                        서류합격
-                                                    </button>
-                                                    <button
-                                                        onClick={() => handleApplicationStatus(app.id, 'REJECTED')}
-                                                        className="px-4 py-2 rounded-lg bg-red-500/20 text-red-400 hover:bg-red-500/30 transition-all font-semibold"
-                                                    >
-                                                        거절
-                                                    </button>
-                                                </div>
-                                            )}
-                                            {app.status === 'DOCUMENT_APPROVED' && (
-                                                <div className="flex gap-2">
-                                                    {app.confirmedInterviewDate && app.confirmedInterviewTime && (
+                                            <div className="flex gap-2 flex-wrap">
+                                                {app.status === 'PENDING' && (
+                                                    <>
                                                         <button
-                                                            onClick={() => handleApplicationStatus(app.id, 'INTERVIEW_APPROVED')}
-                                                            className="px-4 py-2 rounded-lg bg-green-500/20 text-green-400 hover:bg-green-500/30 transition-all font-semibold"
+                                                            onClick={() => handleApplicationStatus(app.id, 'DOCUMENT_APPROVED')}
+                                                            className="px-4 py-2 rounded-lg bg-blue-500/20 text-blue-400 hover:bg-blue-500/30 transition-all font-semibold"
                                                         >
-                                                            최종합격
+                                                            서류합격
                                                         </button>
-                                                    )}
-                                                    <button
-                                                        onClick={() => handleApplicationStatus(app.id, 'REJECTED')}
-                                                        className="px-4 py-2 rounded-lg bg-red-500/20 text-red-400 hover:bg-red-500/30 transition-all font-semibold"
-                                                    >
-                                                        거절
-                                                    </button>
-                                                </div>
-                                            )}
+                                                        <button
+                                                            onClick={() => handleApplicationStatus(app.id, 'REJECTED')}
+                                                            className="px-4 py-2 rounded-lg bg-red-500/20 text-red-400 hover:bg-red-500/30 transition-all font-semibold"
+                                                        >
+                                                            거절
+                                                        </button>
+                                                    </>
+                                                )}
+                                                {app.status === 'DOCUMENT_APPROVED' && (
+                                                    <>
+                                                        {app.confirmedInterviewDate && app.confirmedInterviewTime && (
+                                                            <button
+                                                                onClick={() => handleApplicationStatus(app.id, 'INTERVIEW_APPROVED')}
+                                                                className="px-4 py-2 rounded-lg bg-green-500/20 text-green-400 hover:bg-green-500/30 transition-all font-semibold"
+                                                            >
+                                                                최종합격
+                                                            </button>
+                                                        )}
+                                                        <button
+                                                            onClick={() => handleApplicationStatus(app.id, 'REJECTED')}
+                                                            className="px-4 py-2 rounded-lg bg-red-500/20 text-red-400 hover:bg-red-500/30 transition-all font-semibold"
+                                                        >
+                                                            거절
+                                                        </button>
+                                                    </>
+                                                )}
+                                                {/* 삭제 버튼 */}
+                                                <button
+                                                    onClick={() => handleDeleteApplication(app.id)}
+                                                    className="px-4 py-2 rounded-lg bg-red-900/30 text-red-500 hover:bg-red-900/50 transition-all font-semibold border border-red-500/20"
+                                                >
+                                                    🗑️ 삭제
+                                                </button>
+                                            </div>
                                         </div>
                                     ))
                                 )}
@@ -943,8 +988,35 @@ const AdminPage = () => {
 
                                 {/* 단계별 결과 공개 설정 */}
                                 <div className="p-6 rounded-lg bg-white/5 border border-white/10">
-                                    <h3 className="text-white font-semibold mb-4">단계별 결과 공개 설정</h3>
+                                    <h3 className="text-white font-semibold mb-4">모집 일정 & 단계별 결과 공개 설정</h3>
                                     <div className="space-y-4">
+                                        <div className="grid grid-cols-2 gap-4">
+                                            <div>
+                                                <label className="block text-sm font-medium text-slate-300 mb-2">지원 시작일</label>
+                                                <input
+                                                    type="datetime-local"
+                                                    value={applicationStartDate}
+                                                    onChange={(e) => setApplicationStartDate(e.target.value)}
+                                                    className="w-full px-4 py-2 rounded-lg bg-white/5 border border-white/10 text-white focus:outline-none focus:border-comet-blue"
+                                                />
+                                                <p className="text-xs text-slate-400 mt-1">
+                                                    이 날짜부터 지원이 시작됩니다.
+                                                </p>
+                                            </div>
+                                            <div>
+                                                <label className="block text-sm font-medium text-slate-300 mb-2">지원 마감일</label>
+                                                <input
+                                                    type="datetime-local"
+                                                    value={applicationEndDate}
+                                                    onChange={(e) => setApplicationEndDate(e.target.value)}
+                                                    className="w-full px-4 py-2 rounded-lg bg-white/5 border border-white/10 text-white focus:outline-none focus:border-comet-blue"
+                                                />
+                                                <p className="text-xs text-slate-400 mt-1">
+                                                    이 날짜 이후 지원이 마감됩니다. 카운트다운이 표시됩니다.
+                                                </p>
+                                            </div>
+                                        </div>
+                                        <hr className="border-white/10" />
                                         <div className="grid grid-cols-2 gap-4">
                                             <div>
                                                 <label className="block text-sm font-medium text-slate-300 mb-2">서류 결과 공개 시작일</label>

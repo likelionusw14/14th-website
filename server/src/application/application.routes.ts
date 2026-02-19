@@ -597,6 +597,8 @@ router.post('/settings', authenticateToken, requireAdmin, async (req: Request, r
         const {
             resultOpenDate,
             googleFormUrl,
+            applicationStartDate,
+            applicationEndDate,
             documentResultStartDate,
             documentResultEndDate,
             interviewScheduleDate,
@@ -635,6 +637,12 @@ router.post('/settings', authenticateToken, requireAdmin, async (req: Request, r
         const docEnd = processDate(documentResultEndDate);
         if (docEnd !== undefined) updateData.documentResultEndDate = docEnd;
 
+        const appStart = processDate(applicationStartDate);
+        if (appStart !== undefined) updateData.applicationStartDate = appStart;
+
+        const appEnd = processDate(applicationEndDate);
+        if (appEnd !== undefined) updateData.applicationEndDate = appEnd;
+
         const interviewSchedule = processDate(interviewScheduleDate);
         if (interviewSchedule !== undefined) updateData.interviewScheduleDate = interviewSchedule;
 
@@ -660,6 +668,8 @@ router.post('/settings', authenticateToken, requireAdmin, async (req: Request, r
                 data: {
                     resultOpenDate: new Date(resultOpenDate),
                     googleFormUrl: googleFormUrl || null,
+                    applicationStartDate: appStart || null,
+                    applicationEndDate: appEnd || null,
                     documentResultStartDate: docStart || null,
                     documentResultEndDate: docEnd || null,
                     interviewScheduleDate: interviewSchedule || null,
@@ -691,6 +701,58 @@ router.get('/google-form-url', async (req: Request, res: Response) => {
         });
     } catch (error) {
         console.error('Get google form URL error:', error);
+        res.status(500).json({ message: 'Internal server error' });
+    }
+});
+
+// 8-2. Get Schedule (Public - No Auth Required)
+router.get('/schedule', async (req: Request, res: Response) => {
+    try {
+        const settings = await prisma.applicationSettings.findFirst({
+            orderBy: { createdAt: 'desc' }
+        });
+
+        res.json({
+            success: true,
+            schedule: {
+                applicationStartDate: settings?.applicationStartDate || null,
+                applicationEndDate: settings?.applicationEndDate || null,
+                documentResultStartDate: settings?.documentResultStartDate || null,
+                documentResultEndDate: settings?.documentResultEndDate || null,
+                interviewScheduleDate: settings?.interviewScheduleDate || null,
+                finalResultDate: settings?.finalResultDate || null
+            }
+        });
+    } catch (error) {
+        console.error('Get schedule error:', error);
+        res.status(500).json({ message: 'Internal server error' });
+    }
+});
+
+// 8-3. Delete Application (Admin)
+router.delete('/:id', authenticateToken, requireAdmin, async (req: Request, res: Response) => {
+    try {
+        const applicationId = parseInt(Array.isArray(req.params.id) ? req.params.id[0] : req.params.id);
+
+        const application = await prisma.application.findUnique({
+            where: { id: applicationId }
+        });
+
+        if (!application) {
+            res.status(404).json({ message: '지원서를 찾을 수 없습니다' });
+            return;
+        }
+
+        await prisma.application.delete({
+            where: { id: applicationId }
+        });
+
+        res.json({
+            success: true,
+            message: '지원서가 삭제되었습니다'
+        });
+    } catch (error) {
+        console.error('Delete application error:', error);
         res.status(500).json({ message: 'Internal server error' });
     }
 });

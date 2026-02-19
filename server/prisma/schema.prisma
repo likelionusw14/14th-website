@@ -83,6 +83,10 @@ model Attendance {
 model ApplicationSettings {
   id              Int      @id @default(autoincrement())
   
+  // 모집 기간
+  applicationStartDate    DateTime? // 지원 시작일
+  applicationEndDate      DateTime? // 지원 마감일
+  
   // 서류 결과 공개 기간
   documentResultStartDate DateTime? // 서류 결과 공개 시작일
   documentResultEndDate   DateTime? // 서류 결과 공개 종료일 (= 면접 일정 선택 마감일)

@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { useForm } from 'react-hook-form';
 import { API_BASE_URL } from '../../shared/context/AuthContext';
@@ -14,6 +14,15 @@ interface ResultData {
     confirmedInterviewTime: string | null;
 }
 
+interface ScheduleData {
+    applicationStartDate: string | null;
+    applicationEndDate: string | null;
+    documentResultStartDate: string | null;
+    documentResultEndDate: string | null;
+    interviewScheduleDate: string | null;
+    finalResultDate: string | null;
+}
+
 const ResultPage = () => {
     const { register, handleSubmit, formState: { errors } } = useForm();
     const [result, setResult] = useState<ResultData | null>(null);
@@ -21,6 +30,23 @@ const ResultPage = () => {
     const [isLoading, setIsLoading] = useState(false);
     const [resultOpenDate, setResultOpenDate] = useState<string | null>(null);
     const [userInfo, setUserInfo] = useState<{ studentId: string; name: string; phoneLastDigits: string } | null>(null);
+    const [schedule, setSchedule] = useState<ScheduleData | null>(null);
+
+    useEffect(() => {
+        fetchSchedule();
+    }, []);
+
+    const fetchSchedule = async () => {
+        try {
+            const response = await fetch(`${API_BASE_URL}/api/application/schedule`);
+            const result = await response.json();
+            if (result.success) {
+                setSchedule(result.schedule);
+            }
+        } catch (error) {
+            console.error('Failed to fetch schedule:', error);
+        }
+    };
 
     const onSubmit = async (data: any) => {
         setErrorMsg('');
@@ -64,6 +90,32 @@ const ResultPage = () => {
             setIsLoading(false);
         }
     };
+
+    const formatDate = (dateStr: string | null) => {
+        if (!dateStr) return '미정';
+        return new Date(dateStr).toLocaleDateString('ko-KR', {
+            month: 'long',
+            day: 'numeric',
+            weekday: 'short',
+            hour: '2-digit',
+            minute: '2-digit'
+        });
+    };
+
+    const getStepStatus = (dateStr: string | null): 'upcoming' | 'past' => {
+        if (!dateStr) return 'upcoming';
+        const now = new Date().getTime();
+        const date = new Date(dateStr).getTime();
+        if (now >= date) return 'past';
+        return 'upcoming';
+    };
+
+    const scheduleSteps = schedule ? [
+        { label: '지원 접수', date: schedule.applicationStartDate, endDate: schedule.applicationEndDate, icon: '📝' },
+        { label: '서류 결과 발표', date: schedule.documentResultStartDate, icon: '📋' },
+        { label: '면접 일정 공개', date: schedule.interviewScheduleDate, icon: '🗓️' },
+        { label: '최종 결과 발표', date: schedule.finalResultDate, icon: '🎉' }
+    ] : [];
 
     const getStatusColor = (status: string) => {
         switch (status) {
@@ -119,6 +171,44 @@ const ResultPage = () => {
                 >
                     <h1 className="text-3xl font-bold text-white mb-2">지원 결과 조회</h1>
                     <p className="text-slate-400 mb-8">학번, 이름, 전화번호 뒷자리를 입력하여 결과를 확인하세요</p>
+
+                    {/* 모집 일정 타임라인 */}
+                    {scheduleSteps.length > 0 && (
+                        <div className="p-5 rounded-lg bg-white/5 border border-white/10 mb-6">
+                            <h3 className="text-white font-semibold mb-4 text-sm">📅 모집 일정</h3>
+                            <div className="flex flex-col md:flex-row md:items-start gap-3 md:gap-0 md:justify-between relative">
+                                {/* 가로 연결선 (md 이상) */}
+                                <div className="hidden md:block absolute top-4 left-8 right-8 h-0.5 bg-white/10" />
+
+                                {scheduleSteps.map((step, idx) => {
+                                    const isPast = getStepStatus(step.date) === 'past';
+                                    const isCurrent = isPast && idx < scheduleSteps.length - 1 && getStepStatus(scheduleSteps[idx + 1].date) === 'upcoming';
+
+                                    return (
+                                        <div key={idx} className="flex md:flex-col items-center gap-3 md:gap-1 flex-1 relative z-10">
+                                            <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm shrink-0 ${isCurrent
+                                                ? 'bg-comet-blue ring-2 ring-comet-blue/40'
+                                                : isPast
+                                                    ? 'bg-green-500/20 border border-green-500/40'
+                                                    : 'bg-white/5 border border-white/20'
+                                                }`}>
+                                                {step.icon}
+                                            </div>
+                                            <div className="md:text-center">
+                                                <div className={`text-xs font-semibold ${isCurrent ? 'text-comet-blue' : isPast ? 'text-green-400' : 'text-slate-400'
+                                                    }`}>
+                                                    {step.label}
+                                                </div>
+                                                <div className="text-[10px] text-slate-500 mt-0.5">
+                                                    {formatDate(step.date)}
+                                                </div>
+                                            </div>
+                                        </div>
+                                    );
+                                })}
+                            </div>
+                        </div>
+                    )}
 
                     {resultOpenDate && (
                         <div className="p-4 rounded-lg bg-yellow-500/10 border border-yellow-500/20 text-yellow-300 mb-6">

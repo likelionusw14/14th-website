@@ -178,4 +178,39 @@ router.post('/profile/upload', authenticate, upload.single('profileImage'), asyn
     }
 });
 
+// DELETE /api/members/profile/image - 프로필 이미지 삭제 (인증 필요)
+router.delete('/profile/image', authenticate, async (req: Request, res: Response) => {
+    try {
+        const userId = (req as any).userId;
+
+        const user = await prisma.user.findUnique({ where: { id: userId } });
+        if (!user) {
+            res.status(404).json({ success: false, message: '사용자를 찾을 수 없습니다' });
+            return;
+        }
+
+        // GCS에서 기존 이미지 삭제 시도
+        if (user.profileImage) {
+            try {
+                const url = new URL(user.profileImage);
+                const filePath = url.pathname.replace(`/${bucketName}/`, '');
+                await bucket.file(filePath).delete();
+            } catch (deleteError) {
+                console.warn('GCS image delete failed (may not exist):', deleteError);
+            }
+        }
+
+        // DB에서 profileImage null로 업데이트
+        await prisma.user.update({
+            where: { id: userId },
+            data: { profileImage: null }
+        });
+
+        res.json({ success: true, message: '프로필 이미지가 삭제되었습니다' });
+    } catch (error) {
+        console.error('Failed to delete profile image:', error);
+        res.status(500).json({ success: false, message: '이미지 삭제 실패' });
+    }
+});
+
 export default router;
