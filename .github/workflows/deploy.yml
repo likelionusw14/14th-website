@@ -1,0 +1,41 @@
+name: Deploy to GCP Cloud Run
+
+on:
+  push:
+    branches:
+      - main # main 브랜치에 푸시될 때 자동 실행됩니다.
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    
+    # GCP Workload Identity Federation을 사용하기 위한 권한 설정 (OIDC 토큰 발급)
+    permissions:
+      contents: 'read'
+      id-token: 'write'
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Authenticate to Google Cloud
+        id: auth
+        uses: google-github-actions/auth@v2
+        with:
+          # GitHub Secrets에 설정된 Provider와 Service Account를 참조합니다.
+          workload_identity_provider: '${{ secrets.WIF_PROVIDER }}' 
+          service_account: '${{ secrets.SA_EMAIL }}'
+
+      - name: Set up Cloud SDK
+        uses: google-github-actions/setup-gcloud@v2
+
+      - name: Create cloudbuild.yaml from Secret
+        run: |
+          cat << 'EOF' > cloudbuild.yaml
+          ${{ secrets.CLOUDBUILD_YAML }}
+          EOF
+
+      - name: Submit to Google Cloud Build
+        # 생성된 cloudbuild.yaml을 사용하여 GCP Cloud Build 트리거
+        run: |
+          gcloud builds submit --config cloudbuild.yaml .

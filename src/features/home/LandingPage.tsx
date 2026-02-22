@@ -164,52 +164,6 @@ const LandingPage = () => {
                     </motion.div>
                 </div>
             </section>
-
-            {/* Activity Timeline */}
-            <section className="py-24 px-6 relative z-10 max-w-4xl mx-auto">
-                <motion.div
-                    initial={{ opacity: 0 }}
-                    whileInView={{ opacity: 1 }}
-                    viewport={{ once: true }}
-                    className="text-center mb-16"
-                >
-                    <h2 className="text-3xl md:text-4xl font-bold mb-4">Cosmic Roadmap</h2>
-                    <p className="text-slate-400">1년 동안 이어지는 우리의 여정입니다.</p>
-                </motion.div>
-
-                <div className="relative border-l-2 border-white/10 ml-4 md:ml-0 md:pl-0 space-y-12">
-                    {[
-                        { date: "3월", title: "OT (모집 및 오리엔테이션)", desc: "새로운 아기사자들이 우주선에 탑승합니다." },
-                        { date: "5월", title: "중앙 아이디어톤", desc: "전국 아기사자들이 모여 아이디어를 공유합니다." },
-                        { date: "4월 - 6월", title: "1학기 트랙별 세션 (트랙 교육)", desc: "트랙별 집중 학습 (React, Spring 등)" },
-                        { date: "7월 - 8월", title: "중앙 해커톤", desc: "팀을 이루어 실제 서비스를 구현합니다." },
-                        { date: "9월 - 11월", title: "2학기 트랙별 세션", desc: "심화 과정을 진행합니다." },
-                        { date: "12월", title: "종강총회", desc: "1년간의 여정을 마무리하며 성과를 공유합니다." }
-                    ].map((item, index) => (
-                        <motion.div
-                            key={index}
-                            initial={{ opacity: 0, x: -20 }}
-                            whileInView={{ opacity: 1, x: 0 }}
-                            viewport={{ once: true }}
-                            transition={{ delay: index * 0.1 }}
-                            className="relative pl-8 md:pl-0 md:flex md:items-center md:justify-between group"
-                        >
-                            {/* Dot */}
-                            <div className="absolute left-[-5px] top-2 w-3 h-3 bg-comet-blue rounded-full shadow-[0_0_10px_#3b82f6] md:left-auto md:right-auto md:relative md:w-4 md:h-4 md:order-2 md:mx-8 md:ring-4 md:ring-deep-navy" />
-
-                            {/* Content */}
-                            <div className={`md:w-[45%] ${index % 2 === 0 ? 'md:order-1 md:text-right' : 'md:order-3 md:text-left'} p-6 rounded-2xl glass border border-white/5 hover:border-white/20 transition-all`}>
-                                <span className="text-sm font-bold text-comet-blue block mb-1">{item.date}</span>
-                                <h3 className="text-xl font-bold text-white mb-2">{item.title}</h3>
-                                <p className="text-slate-400 text-sm">{item.desc}</p>
-                            </div>
-
-                            {/* Empty space for opposite side */}
-                            <div className={`hidden md:block md:w-[45%] ${index % 2 === 0 ? 'md:order-3' : 'md:order-1'}`} />
-                        </motion.div>
-                    ))}
-                </div>
-            </section>
         </div>
     )
 }

@@ -7,6 +7,10 @@ interface User {
     name: string | null;
     role: 'GUEST' | 'BABY_LION' | 'ADMIN';
     major?: string | null;
+    profileImage?: string | null;
+    bio?: string | null;
+    team?: string | null;
+    track?: string | null;
 }
 
 interface AuthContextType {
@@ -24,7 +28,7 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 // VITE_API_URL이 명시적으로 설정되지 않은 경우:
 // - 개발 환경: http://localhost:4000 사용
 // - 프로덕션: 빈 문자열로 상대 경로 사용 (nginx 프록시 활용)
-export const API_BASE_URL = import.meta.env.VITE_API_URL || 
+export const API_BASE_URL = import.meta.env.VITE_API_URL ||
     (import.meta.env.MODE === 'development' ? 'http://localhost:4000' : '');
 
 export const AuthProvider = ({ children }: { children: ReactNode }) => {
@@ -41,24 +45,24 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     useEffect(() => {
         const initAuth = async () => {
             // #region agent log
-            fetch('http://127.0.0.1:7243/ingest/6b883636-1481-4250-a61b-b80d8e085cc6',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'AuthContext.tsx:30',message:'initAuth started',data:{hasToken:!!localStorage.getItem('token')},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'A'})}).catch(()=>{});
+            fetch('http://127.0.0.1:7243/ingest/6b883636-1481-4250-a61b-b80d8e085cc6', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ location: 'AuthContext.tsx:30', message: 'initAuth started', data: { hasToken: !!localStorage.getItem('token') }, timestamp: Date.now(), sessionId: 'debug-session', runId: 'run1', hypothesisId: 'A' }) }).catch(() => { });
             // #endregion
             const storedToken = localStorage.getItem('token');
             if (storedToken) {
                 try {
                     // #region agent log
-                    fetch('http://127.0.0.1:7243/ingest/6b883636-1481-4250-a61b-b80d8e085cc6',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'AuthContext.tsx:35',message:'Fetching /api/auth/me',data:{tokenLength:storedToken.length},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'A'})}).catch(()=>{});
+                    fetch('http://127.0.0.1:7243/ingest/6b883636-1481-4250-a61b-b80d8e085cc6', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ location: 'AuthContext.tsx:35', message: 'Fetching /api/auth/me', data: { tokenLength: storedToken.length }, timestamp: Date.now(), sessionId: 'debug-session', runId: 'run1', hypothesisId: 'A' }) }).catch(() => { });
                     // #endregion
                     // Verify token validity with backend
                     const response = await fetch(`${API_BASE_URL}/api/auth/me`, {
                         headers: { Authorization: `Bearer ${storedToken}` }
                     });
                     // #region agent log
-                    fetch('http://127.0.0.1:7243/ingest/6b883636-1481-4250-a61b-b80d8e085cc6',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'AuthContext.tsx:40',message:'Response received',data:{status:response.status,ok:response.ok},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'A'})}).catch(()=>{});
+                    fetch('http://127.0.0.1:7243/ingest/6b883636-1481-4250-a61b-b80d8e085cc6', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ location: 'AuthContext.tsx:40', message: 'Response received', data: { status: response.status, ok: response.ok }, timestamp: Date.now(), sessionId: 'debug-session', runId: 'run1', hypothesisId: 'A' }) }).catch(() => { });
                     // #endregion
                     const result = await response.json();
                     // #region agent log
-                    fetch('http://127.0.0.1:7243/ingest/6b883636-1481-4250-a61b-b80d8e085cc6',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'AuthContext.tsx:43',message:'Result parsed',data:{success:result.success,hasUser:!!result.user},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'A'})}).catch(()=>{});
+                    fetch('http://127.0.0.1:7243/ingest/6b883636-1481-4250-a61b-b80d8e085cc6', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ location: 'AuthContext.tsx:43', message: 'Result parsed', data: { success: result.success, hasUser: !!result.user }, timestamp: Date.now(), sessionId: 'debug-session', runId: 'run1', hypothesisId: 'A' }) }).catch(() => { });
                     // #endregion
                     if (result.success) {
                         setUser(result.user);
@@ -68,7 +72,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
                     }
                 } catch (error) {
                     // #region agent log
-                    fetch('http://127.0.0.1:7243/ingest/6b883636-1481-4250-a61b-b80d8e085cc6',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'AuthContext.tsx:50',message:'Error in initAuth',data:{error:error instanceof Error?error.message:String(error)},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'A'})}).catch(()=>{});
+                    fetch('http://127.0.0.1:7243/ingest/6b883636-1481-4250-a61b-b80d8e085cc6', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ location: 'AuthContext.tsx:50', message: 'Error in initAuth', data: { error: error instanceof Error ? error.message : String(error) }, timestamp: Date.now(), sessionId: 'debug-session', runId: 'run1', hypothesisId: 'A' }) }).catch(() => { });
                     // #endregion
                     console.error("Session verification failed", error);
                     logout();

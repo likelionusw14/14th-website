@@ -12,5 +12,14 @@ export default defineConfig({
         changeOrigin: true,
       }
     } : undefined
-  }
+  },
+  build: {
+    outDir: 'dist',
+    sourcemap: true
+  },
+  resolve: {
+    alias: {
+      '@': '/src',
+    },
+  },
 })
