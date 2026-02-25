@@ -63,7 +63,6 @@ const AdminPage = () => {
     const [importResults, setImportResults] = useState<any>(null);
     const [showAddForm, setShowAddForm] = useState(false);
     const [newApplication, setNewApplication] = useState({
-        studentId: '',
         name: '',
         phoneLastDigits: '',
         track: 'FRONTEND' as 'FRONTEND' | 'BACKEND' | 'DESIGN' | 'PM'
@@ -313,7 +312,7 @@ const AdminPage = () => {
     };
 
     const handleCreateApplication = async () => {
-        if (!newApplication.studentId || !newApplication.name || !newApplication.phoneLastDigits || !newApplication.track) {
+        if (!newApplication.name || !newApplication.phoneLastDigits || !newApplication.track) {
             setErrorMsg('모든 필수 항목을 입력해주세요');
             setTimeout(() => setErrorMsg(''), 3000);
             return;
@@ -346,7 +345,6 @@ const AdminPage = () => {
                 setSuccessMsg('지원서가 추가되었습니다');
                 setShowAddForm(false);
                 setNewApplication({
-                    studentId: '',
                     name: '',
                     phoneLastDigits: '',
                     track: 'FRONTEND'
@@ -701,16 +699,7 @@ const AdminPage = () => {
                                     <div className="p-6 rounded-lg bg-white/5 border border-white/10 mb-4">
                                         <h3 className="text-white font-semibold mb-4">새 지원서 추가</h3>
                                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                            <div>
-                                                <label className="block text-sm font-medium text-slate-300 mb-2">학번 *</label>
-                                                <input
-                                                    type="text"
-                                                    value={newApplication.studentId}
-                                                    onChange={(e) => setNewApplication({ ...newApplication, studentId: e.target.value })}
-                                                    className="w-full px-4 py-2 rounded-lg bg-white/5 border border-white/10 text-white placeholder-slate-500 focus:outline-none focus:border-comet-blue"
-                                                    placeholder="2024123456"
-                                                />
-                                            </div>
+
                                             <div>
                                                 <label className="block text-sm font-medium text-slate-300 mb-2">이름 *</label>
                                                 <input
@@ -762,7 +751,6 @@ const AdminPage = () => {
                                                 onClick={() => {
                                                     setShowAddForm(false);
                                                     setNewApplication({
-                                                        studentId: '',
                                                         name: '',
                                                         phoneLastDigits: '',
                                                         track: 'FRONTEND'
@@ -784,10 +772,10 @@ const AdminPage = () => {
                                             <div className="flex items-start justify-between mb-4">
                                                 <div>
                                                     <div className="font-semibold text-white text-lg">
-                                                        {app.user.name || app.user.studentId}
+                                                        {app.user.name || (app.user.studentId.startsWith('ADMIN_CREATED_') ? `전화번호 뒷자리: ${app.phoneLastDigits}` : app.user.studentId)}
                                                     </div>
                                                     <div className="text-sm text-slate-400 mt-1">
-                                                        {app.user.studentId} · {app.user.major || '전공 미입력'}
+                                                        {app.user.studentId.startsWith('ADMIN_CREATED_') ? `전화번호 뒷자리: ${app.phoneLastDigits}` : app.user.studentId} · {app.user.major || '전공 미입력'}
                                                     </div>
                                                     <div className="text-xs text-slate-500 mt-1">
                                                         {new Date(app.createdAt).toLocaleString('ko-KR')}
