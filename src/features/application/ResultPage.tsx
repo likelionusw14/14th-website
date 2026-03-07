@@ -33,7 +33,7 @@ const ResultPage = () => {
     const [errorMsg, setErrorMsg] = useState('');
     const [isLoading, setIsLoading] = useState(false);
     const [resultOpenDate, setResultOpenDate] = useState<string | null>(null);
-    const [userInfo, setUserInfo] = useState<{ studentId: string; name: string; phoneLastDigits: string } | null>(null);
+    const [userInfo, setUserInfo] = useState<{ name: string; phoneLastDigits: string } | null>(null);
     const [schedule, setSchedule] = useState<ScheduleData | null>(null);
 
     useEffect(() => {
@@ -64,7 +64,6 @@ const ResultPage = () => {
                     'Content-Type': 'application/json'
                 },
                 body: JSON.stringify({
-                    studentId: data.studentId,
                     name: data.name,
                     phoneLastDigits: data.phoneLastDigits
                 })
@@ -76,7 +75,6 @@ const ResultPage = () => {
                 setResult(resultData.result);
                 // 사용자 정보 저장 (면접 일정 선택 시 사용)
                 setUserInfo({
-                    studentId: data.studentId,
                     name: data.name,
                     phoneLastDigits: data.phoneLastDigits
                 });
@@ -174,7 +172,7 @@ const ResultPage = () => {
                     className="glass p-8 rounded-3xl border border-white/10 shadow-2xl"
                 >
                     <h1 className="text-3xl font-bold text-white mb-2">지원 결과 조회</h1>
-                    <p className="text-slate-400 mb-8">학번, 이름, 전화번호 뒷자리를 입력하여 결과를 확인하세요</p>
+                    <p className="text-slate-400 mb-8">이름, 전화번호 뒷자리를 입력하여 결과를 확인하세요</p>
 
                     {/* 모집 일정 타임라인 */}
                     {scheduleSteps.length > 0 && (
@@ -233,16 +231,6 @@ const ResultPage = () => {
                             onSubmit={handleSubmit(onSubmit)}
                             className="space-y-6"
                         >
-                            <div className="space-y-2">
-                                <Label htmlFor="studentId">학번</Label>
-                                <Input
-                                    id="studentId"
-                                    {...register('studentId', { required: '학번을 입력해주세요' })}
-                                    placeholder="예: 2024123456"
-                                />
-                                {errors.studentId && <span className="text-red-400 text-xs">{errors.studentId.message as string}</span>}
-                            </div>
-
                             <div className="space-y-2">
                                 <Label htmlFor="name">이름</Label>
                                 <Input
@@ -339,7 +327,7 @@ const ResultPage = () => {
                                                 <h3 className="text-white font-semibold mb-2">면접 일정 선택</h3>
                                                 <p className="text-slate-300 mb-4">면접 일정을 선택해주세요.</p>
                                                 <a
-                                                    href={userInfo ? `/interview-schedule?studentId=${encodeURIComponent(userInfo.studentId)}&name=${encodeURIComponent(userInfo.name)}&phoneLastDigits=${encodeURIComponent(userInfo.phoneLastDigits)}` : '/interview-schedule'}
+                                                    href={userInfo ? `/interview-schedule?name=${encodeURIComponent(userInfo.name)}&phoneLastDigits=${encodeURIComponent(userInfo.phoneLastDigits)}` : '/interview-schedule'}
                                                     className="inline-block px-6 py-3 bg-comet-blue text-white rounded-lg font-semibold hover:bg-comet-blue/80 transition-all"
                                                 >
                                                     면접 일정 선택하기
@@ -359,9 +347,6 @@ const ResultPage = () => {
                                         <div className="space-y-2 mb-4">
                                             <p className="text-sm text-slate-400">
                                                 • 계정이 이미 있으시면 로그인해주세요
-                                            </p>
-                                            <p className="text-sm text-slate-400">
-                                                • 계정이 없으시면 학번으로 자동 생성된 계정으로 로그인하실 수 있습니다 (초기 비밀번호: 학번)
                                             </p>
                                         </div>
                                         <a

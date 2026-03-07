@@ -41,11 +41,9 @@ const InterviewSchedulePage = () => {
 
     // URL 파라미터에서 사용자 정보 가져오기
     useEffect(() => {
-        const studentId = searchParams.get('studentId');
         const name = searchParams.get('name');
         const phoneLastDigits = searchParams.get('phoneLastDigits');
 
-        if (studentId) setValue('studentId', studentId);
         if (name) setValue('name', name);
         if (phoneLastDigits) setValue('phoneLastDigits', phoneLastDigits);
     }, [searchParams, setValue]);
@@ -117,7 +115,7 @@ const InterviewSchedulePage = () => {
         fetchInterviewSettings();
     }, []);
 
-    const hasUserInfo = searchParams.get('studentId') && searchParams.get('name') && searchParams.get('phoneLastDigits');
+    const hasUserInfo = searchParams.get('name') && searchParams.get('phoneLastDigits');
 
     // 날짜 선택
     const handleDateSelect = (dateValue: string) => {
@@ -197,11 +195,10 @@ const InterviewSchedulePage = () => {
         setIsSubmitting(true);
 
         try {
-            const studentId = searchParams.get('studentId') || data.studentId;
             const name = searchParams.get('name') || data.name;
             const phoneLastDigits = searchParams.get('phoneLastDigits') || data.phoneLastDigits;
 
-            if (!studentId || !name || !phoneLastDigits) {
+            if (!name || !phoneLastDigits) {
                 setErrorMsg('모든 필수 정보를 입력해주세요');
                 setIsSubmitting(false);
                 return;
@@ -216,7 +213,7 @@ const InterviewSchedulePage = () => {
             const response = await fetch(`${API_BASE_URL}/api/application/interview-preferences`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ studentId, name, phoneLastDigits, times: timesArray }),
+                body: JSON.stringify({ name, phoneLastDigits, times: timesArray }),
             });
 
             const result = await response.json();
@@ -275,17 +272,7 @@ const InterviewSchedulePage = () => {
                                         <span className="w-6 h-6 rounded-full bg-comet-blue/20 text-comet-blue flex items-center justify-center text-xs font-bold">1</span>
                                         본인 확인
                                     </h3>
-                                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                                        <div>
-                                            <label className="block text-xs font-medium text-slate-400 mb-1.5">학번</label>
-                                            <input
-                                                {...register('studentId', { required: '학번을 입력해주세요' })}
-                                                type="text"
-                                                className="w-full px-4 py-2.5 rounded-xl bg-white/5 border border-white/10 text-white placeholder-slate-500 focus:outline-none focus:border-comet-blue transition-all"
-                                                placeholder="2024123456"
-                                            />
-                                            {errors.studentId && <span className="text-red-400 text-xs mt-1">{errors.studentId.message as string}</span>}
-                                        </div>
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                         <div>
                                             <label className="block text-xs font-medium text-slate-400 mb-1.5">이름</label>
                                             <input

@@ -74,7 +74,6 @@ router.post('/submit', authenticateToken, async (req: Request, res: Response) =>
                 user: {
                     select: {
                         id: true,
-                        studentId: true,
                         name: true,
                         major: true
                     }
@@ -108,7 +107,6 @@ router.get('/my', authenticateToken, async (req: Request, res: Response) => {
                 user: {
                     select: {
                         id: true,
-                        studentId: true,
                         name: true,
                         major: true
                     }
@@ -145,7 +143,6 @@ router.get('/all', authenticateToken, requireAdmin, async (req: Request, res: Re
                 user: {
                     select: {
                         id: true,
-                        studentId: true,
                         name: true,
                         major: true
                     }
@@ -206,7 +203,6 @@ router.patch('/:id/status', authenticateToken, requireAdmin, async (req: Request
                 user: {
                     select: {
                         id: true,
-                        studentId: true,
                         name: true,
                         major: true
                     }
@@ -241,10 +237,10 @@ router.patch('/:id/status', authenticateToken, requireAdmin, async (req: Request
 // 5. Get Result by Student Info (Public - No Auth Required)
 router.post('/result', async (req: Request, res: Response) => {
     try {
-        const { studentId, name, phoneLastDigits } = req.body;
+        const { name, phoneLastDigits } = req.body;
 
-        if (!studentId || !name || !phoneLastDigits) {
-            res.status(400).json({ message: '학번, 이름, 전화번호 뒷자리를 모두 입력해주세요' });
+        if (!name || !phoneLastDigits) {
+            res.status(400).json({ message: '이름, 전화번호 뒷자리를 모두 입력해주세요' });
             return;
         }
 
@@ -277,29 +273,27 @@ router.post('/result', async (req: Request, res: Response) => {
             return;
         }
 
-        // Find application
-        const user = await prisma.user.findUnique({
-            where: { studentId },
-            include: {
-                application: true
-            }
+        // Find application by name and phoneLastDigits
+        const application = await prisma.application.findFirst({
+            where: {
+                phoneLastDigits,
+                user: {
+                    name
+                }
+            },
+            include: { user: true }
         });
 
-        if (!user || !user.application) {
+        if (!application) {
             res.status(404).json({ message: '지원서를 찾을 수 없습니다' });
             return;
         }
-
-        // Verify name and phone last digits
-        if (user.name !== name || user.application.phoneLastDigits !== phoneLastDigits) {
-            res.status(401).json({ message: '정보가 일치하지 않습니다' });
-            return;
-        }
+        const user = application.user;
 
         // 단계별로 정보 반환
         const result: any = {
-            status: user.application.status,
-            track: user.application.track,
+            status: application.status,
+            track: application.track,
             // 시기 정보
             canSelectInterviewTime,
             canViewInterviewSchedule,
@@ -307,18 +301,18 @@ router.post('/result', async (req: Request, res: Response) => {
         };
 
         // 서류 합격자의 면접 일정 선호도 (본인이 제출한 것)
-        if (user.application.interviewPreferences) {
-            result.interviewPreferences = JSON.parse(user.application.interviewPreferences);
+        if (application.interviewPreferences) {
+            result.interviewPreferences = JSON.parse(application.interviewPreferences);
         }
 
         // 면접 일정 공개일 이후에만 확정된 일정 표시
-        if (canViewInterviewSchedule && user.application.confirmedInterviewDate && user.application.confirmedInterviewTime) {
-            result.confirmedInterviewDate = user.application.confirmedInterviewDate;
-            result.confirmedInterviewTime = user.application.confirmedInterviewTime;
+        if (canViewInterviewSchedule && application.confirmedInterviewDate && application.confirmedInterviewTime) {
+            result.confirmedInterviewDate = application.confirmedInterviewDate;
+            result.confirmedInterviewTime = application.confirmedInterviewTime;
         }
 
         // 최종 결과 공개일 이전에는 최종합격 상태를 숨김 (서류합격으로 표시)
-        if (!canViewFinalResult && user.application.status === 'INTERVIEW_APPROVED') {
+        if (!canViewFinalResult && application.status === 'INTERVIEW_APPROVED') {
             result.status = 'DOCUMENT_APPROVED';
             result.finalResultPending = true;
         }
@@ -336,9 +330,9 @@ router.post('/result', async (req: Request, res: Response) => {
 // 6. Submit Interview Preferences (Approved Applicants)
 router.post('/interview-preferences', async (req: Request, res: Response) => {
     try {
-        const { studentId, name, phoneLastDigits, times } = req.body;
+        const { name, phoneLastDigits, times } = req.body;
 
-        if (!studentId || !name || !phoneLastDigits || !times || !Array.isArray(times) || times.length !== 3) {
+        if (!name || !phoneLastDigits || !times || !Array.isArray(times) || times.length !== 3) {
             res.status(400).json({ message: '모든 정보를 올바르게 입력해주세요' });
             return;
         }
@@ -424,33 +418,33 @@ router.post('/interview-preferences', async (req: Request, res: Response) => {
             return;
         }
 
-        // Find user and application
-        const user = await prisma.user.findUnique({
-            where: { studentId },
-            include: { application: true }
+        // Find application by name and phoneLastDigits
+        const application = await prisma.application.findFirst({
+            where: {
+                phoneLastDigits,
+                user: {
+                    name
+                }
+            },
+            include: { user: true }
         });
 
-        if (!user || !user.application) {
+        if (!application) {
             res.status(404).json({ message: '지원서를 찾을 수 없습니다' });
             return;
         }
-
-        // Verify name and phone
-        if (user.name !== name || user.application.phoneLastDigits !== phoneLastDigits) {
-            res.status(401).json({ message: '정보가 일치하지 않습니다' });
-            return;
-        }
+        const user = application.user;
 
         // Check if document approved (서류합격한 지원자만 면접 일정 선택 가능)
         // INTERVIEW_APPROVED도 허용 (최종 결과 공개 전에는 DOCUMENT_APPROVED로 보이므로)
-        if (user.application.status !== 'DOCUMENT_APPROVED' && user.application.status !== 'INTERVIEW_APPROVED') {
+        if (application.status !== 'DOCUMENT_APPROVED' && application.status !== 'INTERVIEW_APPROVED') {
             res.status(403).json({ message: '서류합격한 지원자만 면접 일정을 선택할 수 있습니다' });
             return;
         }
 
         // Update application with interview preferences
         await prisma.application.update({
-            where: { id: user.application.id },
+            where: { id: application.id },
             data: {
                 phoneLastDigits,
                 interviewPreferences: JSON.stringify({ times })
@@ -508,7 +502,6 @@ router.patch('/:id/interview-confirm', authenticateToken, requireAdmin, async (r
                 ...updatedApplication,
                 user: {
                     id: updatedApplication.user.id,
-                    studentId: updatedApplication.user.studentId,
                     name: updatedApplication.user.name,
                     major: updatedApplication.user.major
                 }
@@ -552,7 +545,6 @@ router.patch('/:id/track', authenticateToken, requireAdmin, async (req: Request,
                 user: {
                     select: {
                         id: true,
-                        studentId: true,
                         name: true,
                         major: true
                     }
@@ -760,10 +752,13 @@ router.delete('/:id', authenticateToken, requireAdmin, async (req: Request, res:
 // 9. Create Application Manually (Admin)
 router.post('/create', authenticateToken, requireAdmin, async (req: Request, res: Response) => {
     try {
-        const { studentId, name, phoneLastDigits, track, content } = req.body;
+        const { name, phoneLastDigits, track, content } = req.body;
+        // Generate a random student ID since we no longer require it for manually creating applications
+        // Need to make sure it's somewhat unique so we don't accidentally update the wrong user.
+        const studentId = `ADMIN_CREATED_${Date.now()}_${Math.floor(Math.random() * 10000)}`;
 
-        if (!studentId || !name || !phoneLastDigits || !track) {
-            res.status(400).json({ message: '학번, 이름, 전화번호 뒷자리, 트랙을 모두 입력해주세요' });
+        if (!name || !phoneLastDigits || !track) {
+            res.status(400).json({ message: '이름, 전화번호 뒷자리, 트랙을 모두 입력해주세요' });
             return;
         }
 
@@ -779,12 +774,17 @@ router.post('/create', authenticateToken, requireAdmin, async (req: Request, res
         }
 
         // 사용자 찾기 또는 생성
-        let user = await prisma.user.findUnique({
-            where: { studentId }
+        let user = await prisma.user.findFirst({
+            where: {
+                name,
+                application: {
+                    is: { phoneLastDigits }
+                }
+            }
         });
 
         if (!user) {
-            // 사용자가 없으면 생성 (임시 비밀번호: 학번)
+            // 사용자가 없으면 생성 (임시 비밀번호: 무작위 학번)
             const hashedPassword = await bcrypt.hash(studentId, 10);
             user = await prisma.user.create({
                 data: {
@@ -793,12 +793,6 @@ router.post('/create', authenticateToken, requireAdmin, async (req: Request, res
                     name,
                     role: 'GUEST'
                 }
-            });
-        } else {
-            // 사용자가 있으면 이름 업데이트
-            await prisma.user.update({
-                where: { id: user.id },
-                data: { name }
             });
         }
 
@@ -825,7 +819,6 @@ router.post('/create', authenticateToken, requireAdmin, async (req: Request, res
                 user: {
                     select: {
                         id: true,
-                        studentId: true,
                         name: true,
                         major: true
                     }
