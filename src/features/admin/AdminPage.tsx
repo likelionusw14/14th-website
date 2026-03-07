@@ -17,7 +17,6 @@ interface Application {
     createdAt: string;
     user: {
         id: number;
-        studentId: string;
         name: string | null;
         major: string | null;
     };
@@ -36,7 +35,6 @@ interface Session {
         timestamp: string;
         user: {
             id: number;
-            studentId: string;
             name: string | null;
             major: string | null;
         };
@@ -772,10 +770,10 @@ const AdminPage = () => {
                                             <div className="flex items-start justify-between mb-4">
                                                 <div>
                                                     <div className="font-semibold text-white text-lg">
-                                                        {app.user.name || (app.user.studentId.startsWith('ADMIN_CREATED_') ? `전화번호 뒷자리: ${app.phoneLastDigits}` : app.user.studentId)}
+                                                        {app.user.name || `전화번호 뒷자리: ${app.phoneLastDigits}`}
                                                     </div>
                                                     <div className="text-sm text-slate-400 mt-1">
-                                                        {app.user.studentId.startsWith('ADMIN_CREATED_') ? `전화번호 뒷자리: ${app.phoneLastDigits}` : app.user.studentId} · {app.user.major || '전공 미입력'}
+                                                        {app.phoneLastDigits ? `전화번호 뒷자리: ${app.phoneLastDigits}` : ''}{app.phoneLastDigits && app.user.major ? ' · ' : ''}{app.user.major || '전공 미입력'}
                                                     </div>
                                                     <div className="text-xs text-slate-500 mt-1">
                                                         {new Date(app.createdAt).toLocaleString('ko-KR')}
@@ -1329,7 +1327,7 @@ const AdminPage = () => {
                                                             {session.attendances.map((att) => (
                                                                 <div key={att.id} className="flex items-center justify-between text-sm">
                                                                     <span className="text-slate-300">
-                                                                        {att.user.name || att.user.studentId} ({att.user.studentId})
+                                                                        {att.user.name || '이름 없음'}
                                                                     </span>
                                                                     <span className="text-xs text-slate-500">
                                                                         {new Date(att.timestamp).toLocaleString('ko-KR')}

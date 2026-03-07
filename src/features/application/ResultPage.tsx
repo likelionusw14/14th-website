@@ -350,9 +350,6 @@ const ResultPage = () => {
                                             <p className="text-sm text-slate-400">
                                                 • 계정이 이미 있으시면 로그인해주세요
                                             </p>
-                                            <p className="text-sm text-slate-400">
-                                                • 계정이 없으시면 학번으로 자동 생성된 계정으로 로그인하실 수 있습니다 (초기 비밀번호: 학번)
-                                            </p>
                                         </div>
                                         <a
                                             href="/login"

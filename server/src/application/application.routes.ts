@@ -74,7 +74,6 @@ router.post('/submit', authenticateToken, async (req: Request, res: Response) =>
                 user: {
                     select: {
                         id: true,
-                        studentId: true,
                         name: true,
                         major: true
                     }
@@ -108,7 +107,6 @@ router.get('/my', authenticateToken, async (req: Request, res: Response) => {
                 user: {
                     select: {
                         id: true,
-                        studentId: true,
                         name: true,
                         major: true
                     }
@@ -145,7 +143,6 @@ router.get('/all', authenticateToken, requireAdmin, async (req: Request, res: Re
                 user: {
                     select: {
                         id: true,
-                        studentId: true,
                         name: true,
                         major: true
                     }
@@ -206,7 +203,6 @@ router.patch('/:id/status', authenticateToken, requireAdmin, async (req: Request
                 user: {
                     select: {
                         id: true,
-                        studentId: true,
                         name: true,
                         major: true
                     }
@@ -506,7 +502,6 @@ router.patch('/:id/interview-confirm', authenticateToken, requireAdmin, async (r
                 ...updatedApplication,
                 user: {
                     id: updatedApplication.user.id,
-                    studentId: updatedApplication.user.studentId,
                     name: updatedApplication.user.name,
                     major: updatedApplication.user.major
                 }
@@ -550,7 +545,6 @@ router.patch('/:id/track', authenticateToken, requireAdmin, async (req: Request,
                 user: {
                     select: {
                         id: true,
-                        studentId: true,
                         name: true,
                         major: true
                     }
@@ -825,7 +819,6 @@ router.post('/create', authenticateToken, requireAdmin, async (req: Request, res
                 user: {
                     select: {
                         id: true,
-                        studentId: true,
                         name: true,
                         major: true
                     }
