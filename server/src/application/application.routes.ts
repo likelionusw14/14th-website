@@ -778,7 +778,7 @@ router.post('/create', authenticateToken, requireAdmin, async (req: Request, res
             where: {
                 name,
                 application: {
-                    phoneLastDigits
+                    is: { phoneLastDigits }
                 }
             }
         });
