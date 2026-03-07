@@ -770,10 +770,10 @@ const AdminPage = () => {
                                             <div className="flex items-start justify-between mb-4">
                                                 <div>
                                                     <div className="font-semibold text-white text-lg">
-                                                        {app.user.name || `전화번호 뒷자리: ${app.phoneLastDigits}`}
+                                                        {app.user.name || (app.phoneLastDigits ? `전화번호 뒷자리: ${app.phoneLastDigits}` : '이름 없음')}
                                                     </div>
                                                     <div className="text-sm text-slate-400 mt-1">
-                                                        {app.phoneLastDigits ? `전화번호 뒷자리: ${app.phoneLastDigits}` : ''}{app.phoneLastDigits && app.user.major ? ' · ' : ''}{app.user.major || '전공 미입력'}
+                                                        {!app.user.name && app.phoneLastDigits ? '' : app.phoneLastDigits ? `전화번호 뒷자리: ${app.phoneLastDigits} · ` : ''}{app.user.major || '전공 미입력'}
                                                     </div>
                                                     <div className="text-xs text-slate-500 mt-1">
                                                         {new Date(app.createdAt).toLocaleString('ko-KR')}
@@ -1327,7 +1327,7 @@ const AdminPage = () => {
                                                             {session.attendances.map((att) => (
                                                                 <div key={att.id} className="flex items-center justify-between text-sm">
                                                                     <span className="text-slate-300">
-                                                                        {att.user.name || '이름 없음'}
+                                                                        {att.user.name || `사용자 #${att.user.id}`}
                                                                     </span>
                                                                     <span className="text-xs text-slate-500">
                                                                         {new Date(att.timestamp).toLocaleString('ko-KR')}

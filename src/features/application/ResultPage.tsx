@@ -231,8 +231,6 @@ const ResultPage = () => {
                             onSubmit={handleSubmit(onSubmit)}
                             className="space-y-6"
                         >
-
-
                             <div className="space-y-2">
                                 <Label htmlFor="name">이름</Label>
                                 <Input
