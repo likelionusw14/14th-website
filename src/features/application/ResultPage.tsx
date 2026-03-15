@@ -342,19 +342,32 @@ const ResultPage = () => {
                                     <CardContent className="pt-6">
                                         <h3 className="text-white font-semibold mb-4">🎉 최종합격을 축하합니다!</h3>
                                         <p className="text-slate-300 mb-4">
-                                            멋쟁이사자처럼 14기에 최종합격하셨습니다. 이제 로그인하여 동아리 활동을 시작할 수 있습니다.
+                                            멋쟁이사자처럼 14기에 최종합격하셨습니다. 아래 구글폼을 통해 등록을 완료해주세요!
                                         </p>
                                         <div className="space-y-2 mb-4">
                                             <p className="text-sm text-slate-400">
-                                                • 계정이 이미 있으시면 로그인해주세요
+                                                • 아래 버튼을 눌러 최종 등록을 완료해주세요
+                                            </p>
+                                            <p className="text-sm text-slate-400">
+                                                • 등록 완료 후 로그인하여 동아리 활동을 시작할 수 있습니다
                                             </p>
                                         </div>
-                                        <a
-                                            href="/login"
-                                            className="inline-block px-6 py-3 bg-comet-blue text-white rounded-lg font-semibold hover:bg-comet-blue/80 transition-all"
-                                        >
-                                            로그인하기
-                                        </a>
+                                        <div className="flex flex-wrap gap-3">
+                                            <a
+                                                href="https://forms.gle/vU9W2D6EPBffABU56"
+                                                target="_blank"
+                                                rel="noopener noreferrer"
+                                                className="inline-block px-6 py-3 bg-green-600 text-white rounded-lg font-semibold hover:bg-green-500 transition-all"
+                                            >
+                                                최종 등록하기
+                                            </a>
+                                            <a
+                                                href="/login"
+                                                className="inline-block px-6 py-3 bg-comet-blue text-white rounded-lg font-semibold hover:bg-comet-blue/80 transition-all"
+                                            >
+                                                로그인하기
+                                            </a>
+                                        </div>
                                     </CardContent>
                                 </Card>
                             )}

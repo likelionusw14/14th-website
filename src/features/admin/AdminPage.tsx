@@ -823,9 +823,63 @@ const AdminPage = () => {
                                                 <div className="p-4 rounded-lg bg-blue-500/10 border border-blue-500/20 mb-4">
                                                     <h4 className="text-white font-semibold mb-2">면접 일정</h4>
                                                     {app.confirmedInterviewDate && app.confirmedInterviewTime ? (
-                                                        <div className="text-green-300">
-                                                            확정: {new Date(app.confirmedInterviewDate).toLocaleDateString('ko-KR')} {app.confirmedInterviewTime}
-                                                        </div>
+                                                        confirmingAppId === app.id ? (
+                                                            <div className="space-y-2">
+                                                                <div className="text-slate-400 text-sm">
+                                                                    현재 확정: {new Date(app.confirmedInterviewDate).toLocaleDateString('ko-KR')} {app.confirmedInterviewTime}
+                                                                </div>
+                                                                <div className="mt-2 p-3 rounded-lg bg-white/5 border border-white/10">
+                                                                    <div className="grid grid-cols-2 gap-2 mb-2">
+                                                                        <input
+                                                                            type="date"
+                                                                            value={confirmDate}
+                                                                            onChange={(e) => setConfirmDate(e.target.value)}
+                                                                            className="px-3 py-2 rounded-lg bg-white/5 border border-white/10 text-white text-sm"
+                                                                        />
+                                                                        <input
+                                                                            type="time"
+                                                                            value={confirmTime}
+                                                                            onChange={(e) => setConfirmTime(e.target.value)}
+                                                                            className="px-3 py-2 rounded-lg bg-white/5 border border-white/10 text-white text-sm"
+                                                                        />
+                                                                    </div>
+                                                                    <div className="flex gap-2">
+                                                                        <button
+                                                                            onClick={() => handleConfirmInterview(app.id)}
+                                                                            className="px-4 py-2 rounded-lg bg-green-500/20 text-green-400 hover:bg-green-500/30 transition-all text-sm font-semibold"
+                                                                        >
+                                                                            수정 확정
+                                                                        </button>
+                                                                        <button
+                                                                            onClick={() => {
+                                                                                setConfirmingAppId(null);
+                                                                                setConfirmDate('');
+                                                                                setConfirmTime('');
+                                                                            }}
+                                                                            className="px-4 py-2 rounded-lg bg-gray-500/20 text-gray-400 hover:bg-gray-500/30 transition-all text-sm font-semibold"
+                                                                        >
+                                                                            취소
+                                                                        </button>
+                                                                    </div>
+                                                                </div>
+                                                            </div>
+                                                        ) : (
+                                                            <div className="flex items-center gap-3">
+                                                                <div className="text-green-300">
+                                                                    확정: {new Date(app.confirmedInterviewDate).toLocaleDateString('ko-KR')} {app.confirmedInterviewTime}
+                                                                </div>
+                                                                <button
+                                                                    onClick={() => {
+                                                                        setConfirmingAppId(app.id);
+                                                                        setConfirmDate(app.confirmedInterviewDate!);
+                                                                        setConfirmTime(app.confirmedInterviewTime!);
+                                                                    }}
+                                                                    className="px-3 py-1 rounded-lg bg-amber-500/20 text-amber-400 hover:bg-amber-500/30 transition-all text-xs font-semibold"
+                                                                >
+                                                                    수정
+                                                                </button>
+                                                            </div>
+                                                        )
                                                     ) : app.interviewPreferences ? (
                                                         <div className="space-y-2">
                                                             <div className="text-slate-300">
