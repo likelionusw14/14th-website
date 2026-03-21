@@ -243,4 +243,82 @@ router.get('/me', async (req: Request, res: Response) => {
     }
 });
 
+// 5. Activate Account (최종합격자 계정 활성화)
+router.post('/activate', async (req: Request, res: Response) => {
+    try {
+        const { name, phoneLastDigits, verificationToken, customPassword } = req.body;
+
+        if (!name || !phoneLastDigits || !verificationToken || !customPassword) {
+            res.status(400).json({ message: '모든 필드를 입력해주세요' });
+            return;
+        }
+
+        // Verify the portal token
+        let tokenData: any;
+        try {
+            const decoded: any = jwt.verify(verificationToken, JWT_SECRET);
+            if (!decoded.verified) {
+                res.status(403).json({ message: '유효하지 않은 인증 토큰입니다' });
+                return;
+            }
+            tokenData = decoded;
+        } catch (e) {
+            res.status(403).json({ message: '인증 토큰이 만료되었거나 유효하지 않습니다' });
+            return;
+        }
+
+        // Find application by name + phoneLastDigits
+        const application = await prisma.application.findFirst({
+            where: {
+                phoneLastDigits,
+                user: { name }
+            },
+            include: { user: true }
+        });
+
+        if (!application) {
+            res.status(404).json({ message: '지원서를 찾을 수 없습니다' });
+            return;
+        }
+
+        // Check if the applicant is actually accepted
+        if (application.status !== 'INTERVIEW_APPROVED') {
+            res.status(403).json({ message: '최종합격자만 계정을 활성화할 수 있습니다' });
+            return;
+        }
+
+        // Check if already activated
+        if (!application.user.studentId.startsWith('ADMIN_CREATED_')) {
+            res.status(409).json({ message: '이미 계정이 활성화되어 있습니다' });
+            return;
+        }
+
+        // Check if real studentId is already taken by another user
+        const existingUser = await prisma.user.findUnique({
+            where: { studentId: tokenData.studentId }
+        });
+        if (existingUser) {
+            res.status(409).json({ message: '해당 학번으로 이미 등록된 계정이 있습니다' });
+            return;
+        }
+
+        // Hash password and update user
+        const hashedPassword = await bcrypt.hash(customPassword, 10);
+        await prisma.user.update({
+            where: { id: application.user.id },
+            data: {
+                studentId: tokenData.studentId,
+                password: hashedPassword,
+                name: tokenData.name || application.user.name,
+                major: tokenData.major || null
+            }
+        });
+
+        res.json({ success: true, message: '계정이 활성화되었습니다. 로그인해주세요.' });
+    } catch (error) {
+        console.error('Activate error:', error);
+        res.status(500).json({ message: 'Internal server error' });
+    }
+});
+
 export default router;
