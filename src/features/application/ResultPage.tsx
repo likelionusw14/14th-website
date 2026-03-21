@@ -342,11 +342,11 @@ const ResultPage = () => {
                                     <CardContent className="pt-6">
                                         <h3 className="text-white font-semibold mb-4">🎉 최종합격을 축하합니다!</h3>
                                         <p className="text-slate-300 mb-4">
-                                            멋쟁이사자처럼 14기에 최종합격하셨습니다. 아래 구글폼을 통해 등록을 완료해주세요!
+                                            멋쟁이사자처럼 14기에 최종합격하셨습니다. 아래 버튼을 눌러 계정을 등록해주세요!
                                         </p>
                                         <div className="space-y-2 mb-4">
                                             <p className="text-sm text-slate-400">
-                                                • 아래 버튼을 눌러 최종 등록을 완료해주세요
+                                                • 포털 인증을 통해 학번과 비밀번호를 등록합니다
                                             </p>
                                             <p className="text-sm text-slate-400">
                                                 • 등록 완료 후 로그인하여 동아리 활동을 시작할 수 있습니다
@@ -354,12 +354,10 @@ const ResultPage = () => {
                                         </div>
                                         <div className="flex flex-wrap gap-3">
                                             <a
-                                                href="https://forms.gle/vU9W2D6EPBffABU56"
-                                                target="_blank"
-                                                rel="noopener noreferrer"
+                                                href={userInfo ? `/login?mode=activate&name=${encodeURIComponent(userInfo.name)}&phoneLastDigits=${encodeURIComponent(userInfo.phoneLastDigits)}` : '/login?mode=activate'}
                                                 className="inline-block px-6 py-3 bg-green-600 text-white rounded-lg font-semibold hover:bg-green-500 transition-all"
                                             >
-                                                최종 등록하기
+                                                계정 등록하기
                                             </a>
                                             <a
                                                 href="/login"
