@@ -1048,5 +1048,153 @@ router.post('/interview-settings', authenticateToken, requireAdmin, async (req: 
     }
 });
 
-export default router;
+// 13. Get Duplicate Accounts (Admin)
+router.get('/duplicates', authenticateToken, requireAdmin, async (req: Request, res: Response) => {
+    try {
+        // Find names that appear in more than one user
+        const duplicateNames = await prisma.user.groupBy({
+            by: ['name'],
+            _count: { name: true },
+            having: {
+                name: { _count: { gt: 1 } }
+            },
+            where: {
+                name: { not: null }
+            }
+        });
 
+        const duplicateGroups = [];
+
+        for (const group of duplicateNames) {
+            const users = await prisma.user.findMany({
+                where: { name: group.name },
+                select: {
+                    id: true,
+                    studentId: true,
+                    name: true,
+                    major: true,
+                    role: true,
+                    createdAt: true,
+                    application: {
+                        select: {
+                            id: true,
+                            track: true,
+                            status: true,
+                            phoneLastDigits: true
+                        }
+                    }
+                },
+                orderBy: { createdAt: 'asc' }
+            });
+
+            duplicateGroups.push({
+                name: group.name,
+                count: group._count.name,
+                users
+            });
+        }
+
+        res.json({ success: true, duplicateGroups });
+    } catch (error) {
+        console.error('Get duplicates error:', error);
+        res.status(500).json({ message: 'Internal server error' });
+    }
+});
+
+// 14. Merge Accounts (Admin)
+router.post('/merge-accounts', authenticateToken, requireAdmin, async (req: Request, res: Response) => {
+    try {
+        const { sourceUserId, targetUserId } = req.body;
+
+        if (!sourceUserId || !targetUserId) {
+            res.status(400).json({ message: '병합할 계정 정보를 입력해주세요.' });
+            return;
+        }
+
+        if (sourceUserId === targetUserId) {
+            res.status(400).json({ message: '같은 계정끼리는 병합할 수 없습니다.' });
+            return;
+        }
+
+        const sourceUser = await prisma.user.findUnique({
+            where: { id: sourceUserId },
+            include: { application: true, attendances: true }
+        });
+        const targetUser = await prisma.user.findUnique({
+            where: { id: targetUserId },
+            include: { application: true }
+        });
+
+        if (!sourceUser) {
+            res.status(404).json({ message: '삭제할 계정을 찾을 수 없습니다.' });
+            return;
+        }
+        if (!targetUser) {
+            res.status(404).json({ message: '유지할 계정을 찾을 수 없습니다.' });
+            return;
+        }
+
+        await prisma.$transaction(async (tx) => {
+            // Transfer application if target doesn't have one
+            if (sourceUser.application) {
+                if (targetUser.application) {
+                    // Target already has application - delete source's
+                    await tx.application.delete({ where: { id: sourceUser.application.id } });
+                } else {
+                    // Move source's application to target
+                    await tx.application.update({
+                        where: { id: sourceUser.application.id },
+                        data: { userId: targetUserId }
+                    });
+                }
+            }
+
+            // Transfer attendance records (skip duplicates)
+            for (const attendance of sourceUser.attendances) {
+                const existing = await tx.attendance.findUnique({
+                    where: {
+                        sessionId_userId: {
+                            sessionId: attendance.sessionId,
+                            userId: targetUserId
+                        }
+                    }
+                });
+                if (!existing) {
+                    await tx.attendance.update({
+                        where: { id: attendance.id },
+                        data: { userId: targetUserId }
+                    });
+                } else {
+                    await tx.attendance.delete({ where: { id: attendance.id } });
+                }
+            }
+
+            // Promote target role if source had higher role
+            if (sourceUser.role === 'BABY_LION' && targetUser.role === 'GUEST') {
+                await tx.user.update({
+                    where: { id: targetUserId },
+                    data: { role: 'BABY_LION' }
+                });
+            }
+            if (sourceUser.role === 'ADMIN' && targetUser.role !== 'ADMIN') {
+                await tx.user.update({
+                    where: { id: targetUserId },
+                    data: { role: 'ADMIN' }
+                });
+            }
+
+            // Delete source user
+            await tx.user.delete({ where: { id: sourceUserId } });
+        });
+
+        res.json({
+            success: true,
+            message: `${sourceUser.name} 계정이 ${targetUser.studentId} 계정으로 병합되었습니다.`
+        });
+    } catch (error) {
+        console.error('Merge accounts error:', error);
+        res.status(500).json({ message: 'Internal server error' });
+    }
+});
+
+export default router;

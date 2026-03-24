@@ -321,4 +321,166 @@ router.post('/activate', async (req: Request, res: Response) => {
     }
 });
 
+// Middleware to verify JWT token
+const authenticateToken = (req: Request, res: Response, next: any) => {
+    const authHeader = req.headers.authorization;
+    if (!authHeader) {
+        res.status(401).json({ message: 'No token provided' });
+        return;
+    }
+
+    const token = authHeader.split(' ')[1];
+    try {
+        const decoded: any = jwt.verify(token, JWT_SECRET);
+        (req as any).userId = decoded.userId;
+        (req as any).userRole = decoded.role;
+        next();
+    } catch (e) {
+        res.status(401).json({ message: 'Invalid token' });
+    }
+};
+
+// Middleware to check admin role
+const requireAdmin = (req: Request, res: Response, next: any) => {
+    if ((req as any).userRole !== 'ADMIN') {
+        res.status(403).json({ message: 'Admin access required' });
+        return;
+    }
+    next();
+};
+
+// 6. Reset Password (Self-service via Portal re-verification)
+router.post('/reset-password', async (req: Request, res: Response) => {
+    try {
+        const { studentId, portalPassword, newPassword } = req.body;
+
+        if (!studentId || !portalPassword || !newPassword) {
+            res.status(400).json({ message: '모든 필드를 입력해주세요.' });
+            return;
+        }
+
+        if (newPassword.length < 6) {
+            res.status(400).json({ message: '비밀번호는 6자 이상이어야 합니다.' });
+            return;
+        }
+
+        // Check if user exists before calling portal
+        const user = await prisma.user.findUnique({ where: { studentId } });
+        if (!user) {
+            res.status(404).json({ message: '등록되지 않은 학번입니다.' });
+            return;
+        }
+
+        // Verify identity via portal
+        const portalData = await verifyPortalCredentials(studentId, portalPassword);
+        if (!portalData.verified) {
+            res.status(401).json({ message: '포털 인증에 실패했습니다.' });
+            return;
+        }
+
+        // Hash and update password
+        const hashedPassword = await bcrypt.hash(newPassword, 10);
+        await prisma.user.update({
+            where: { studentId },
+            data: { password: hashedPassword }
+        });
+
+        res.json({ success: true, message: '비밀번호가 재설정되었습니다.' });
+    } catch (error) {
+        console.error('Reset password error:', error);
+        res.status(500).json({ message: '포털 서버에 연결할 수 없습니다. 잠시 후 다시 시도하거나, 운영진에게 문의해주세요.' });
+    }
+});
+
+// 7. Admin Reset Password (Manual reset for when portal is down)
+router.post('/admin/reset-password', authenticateToken, requireAdmin, async (req: Request, res: Response) => {
+    try {
+        const { targetStudentId, tempPassword } = req.body;
+
+        if (!targetStudentId || !tempPassword) {
+            res.status(400).json({ message: '학번과 임시 비밀번호를 입력해주세요.' });
+            return;
+        }
+
+        if (tempPassword.length < 6) {
+            res.status(400).json({ message: '비밀번호는 6자 이상이어야 합니다.' });
+            return;
+        }
+
+        const user = await prisma.user.findUnique({ where: { studentId: targetStudentId } });
+        if (!user) {
+            res.status(404).json({ message: '해당 학번의 사용자를 찾을 수 없습니다.' });
+            return;
+        }
+
+        const hashedPassword = await bcrypt.hash(tempPassword, 10);
+        await prisma.user.update({
+            where: { studentId: targetStudentId },
+            data: { password: hashedPassword }
+        });
+
+        res.json({ success: true, message: '비밀번호가 재설정되었습니다.', userName: user.name });
+    } catch (error) {
+        console.error('Admin reset password error:', error);
+        res.status(500).json({ message: 'Internal server error' });
+    }
+});
+
+// 8. Relink Portal (Update name/major via portal re-verification)
+router.post('/relink-portal', authenticateToken, async (req: Request, res: Response) => {
+    try {
+        const userId = (req as any).userId;
+        const { portalPassword } = req.body;
+
+        if (!portalPassword) {
+            res.status(400).json({ message: '포털 비밀번호를 입력해주세요.' });
+            return;
+        }
+
+        const user = await prisma.user.findUnique({ where: { id: userId } });
+        if (!user) {
+            res.status(404).json({ message: '사용자를 찾을 수 없습니다.' });
+            return;
+        }
+
+        const portalData = await verifyPortalCredentials(user.studentId, portalPassword);
+        if (!portalData.verified) {
+            res.status(401).json({ message: '포털 인증에 실패했습니다.' });
+            return;
+        }
+
+        if (!portalData.name) {
+            res.status(500).json({ message: '포털에서 이름을 가져올 수 없습니다. 잠시 후 다시 시도해주세요.' });
+            return;
+        }
+
+        const updatedUser = await prisma.user.update({
+            where: { id: userId },
+            data: {
+                name: portalData.name,
+                major: portalData.major || user.major
+            }
+        });
+
+        res.json({
+            success: true,
+            message: '포털 연동이 완료되었습니다.',
+            user: {
+                id: updatedUser.id,
+                studentId: updatedUser.studentId,
+                name: updatedUser.name,
+                role: updatedUser.role,
+                major: updatedUser.major,
+                profileImage: updatedUser.profileImage,
+                bio: updatedUser.bio,
+                team: updatedUser.team,
+                track: updatedUser.track
+            }
+        });
+    } catch (error) {
+        console.error('Relink portal error:', error);
+        res.status(500).json({ message: '포털 서버에 연결할 수 없습니다. 잠시 후 다시 시도해주세요.' });
+    }
+});
+
 export default router;
