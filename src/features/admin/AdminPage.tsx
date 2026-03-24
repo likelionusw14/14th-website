@@ -67,6 +67,16 @@ const AdminPage = () => {
     });
     const [editingTrackAppId, setEditingTrackAppId] = useState<number | null>(null);
 
+    // 비밀번호 초기화
+    const [resetStudentId, setResetStudentId] = useState('');
+    const [resetTempPassword, setResetTempPassword] = useState('');
+    const [resetLoading, setResetLoading] = useState(false);
+
+    // 중복 계정 관리
+    const [duplicateGroups, setDuplicateGroups] = useState<any[]>([]);
+    const [duplicateLoading, setDuplicateLoading] = useState(false);
+    const [mergeLoading, setMergeLoading] = useState<number | null>(null);
+
     // 새로운 날짜 설정
     const [applicationStartDate, setApplicationStartDate] = useState('');
     const [applicationEndDate, setApplicationEndDate] = useState('');
@@ -1280,6 +1290,211 @@ const AdminPage = () => {
                                             </div>
                                         )}
                                     </div>
+                                </div>
+
+                                {/* 회원 비밀번호 초기화 */}
+                                <div className="p-6 rounded-lg bg-white/5 border border-white/10">
+                                    <h3 className="text-white font-semibold mb-4">회원 비밀번호 초기화</h3>
+                                    <p className="text-slate-400 text-sm mb-4">
+                                        포털 인증이 불가능한 경우, 회원의 비밀번호를 수동으로 초기화합니다.
+                                        <br />
+                                        <span className="text-yellow-400">※ 초기화된 비밀번호를 해당 회원에게 직접 전달해주세요.</span>
+                                    </p>
+                                    <div className="space-y-4">
+                                        <div>
+                                            <label className="block text-sm font-medium text-slate-300 mb-2">학번 *</label>
+                                            <input
+                                                type="text"
+                                                value={resetStudentId}
+                                                onChange={(e) => setResetStudentId(e.target.value)}
+                                                placeholder="22000000"
+                                                className="w-full px-4 py-2 rounded-lg bg-white/5 border border-white/10 text-white placeholder-slate-500 focus:outline-none focus:border-comet-blue"
+                                            />
+                                        </div>
+                                        <div>
+                                            <label className="block text-sm font-medium text-slate-300 mb-2">임시 비밀번호 * (6자 이상)</label>
+                                            <input
+                                                type="password"
+                                                value={resetTempPassword}
+                                                onChange={(e) => setResetTempPassword(e.target.value)}
+                                                placeholder="임시 비밀번호 입력"
+                                                className="w-full px-4 py-2 rounded-lg bg-white/5 border border-white/10 text-white placeholder-slate-500 focus:outline-none focus:border-comet-blue"
+                                            />
+                                        </div>
+                                        <button
+                                            onClick={async () => {
+                                                if (!resetStudentId || !resetTempPassword) {
+                                                    setErrorMsg('학번과 임시 비밀번호를 입력해주세요.');
+                                                    setTimeout(() => setErrorMsg(''), 3000);
+                                                    return;
+                                                }
+                                                if (resetTempPassword.length < 6) {
+                                                    setErrorMsg('비밀번호는 6자 이상이어야 합니다.');
+                                                    setTimeout(() => setErrorMsg(''), 3000);
+                                                    return;
+                                                }
+                                                setResetLoading(true);
+                                                try {
+                                                    const response = await fetch(`${API_BASE_URL}/api/auth/admin/reset-password`, {
+                                                        method: 'POST',
+                                                        headers: {
+                                                            'Content-Type': 'application/json',
+                                                            Authorization: `Bearer ${token}`
+                                                        },
+                                                        body: JSON.stringify({
+                                                            targetStudentId: resetStudentId,
+                                                            tempPassword: resetTempPassword
+                                                        })
+                                                    });
+                                                    const result = await response.json();
+                                                    if (result.success) {
+                                                        setSuccessMsg(`${result.userName || resetStudentId}님의 비밀번호가 초기화되었습니다.`);
+                                                        setResetStudentId('');
+                                                        setResetTempPassword('');
+                                                        setTimeout(() => setSuccessMsg(''), 3000);
+                                                    } else {
+                                                        setErrorMsg(result.message || '비밀번호 초기화 실패');
+                                                        setTimeout(() => setErrorMsg(''), 3000);
+                                                    }
+                                                } catch (error) {
+                                                    setErrorMsg('비밀번호 초기화에 실패했습니다.');
+                                                    setTimeout(() => setErrorMsg(''), 3000);
+                                                } finally {
+                                                    setResetLoading(false);
+                                                }
+                                            }}
+                                            disabled={resetLoading || !resetStudentId || !resetTempPassword}
+                                            className="px-6 py-2 rounded-lg bg-orange-500/20 text-orange-400 hover:bg-orange-500/30 transition-all font-semibold disabled:opacity-50 disabled:cursor-not-allowed"
+                                        >
+                                            {resetLoading ? '초기화 중...' : '비밀번호 초기화'}
+                                        </button>
+                                    </div>
+                                </div>
+
+                                {/* 중복 계정 관리 */}
+                                <div className="p-6 rounded-lg bg-white/5 border border-white/10">
+                                    <h3 className="text-white font-semibold mb-4">중복 계정 관리</h3>
+                                    <p className="text-slate-400 text-sm mb-4">
+                                        이름이 같은 중복 계정을 검색하고 병합합니다.
+                                        <br />
+                                        <span className="text-yellow-400">※ ADMIN_CREATED_ 임시 계정의 지원서를 실제 학번 계정으로 이관합니다.</span>
+                                    </p>
+                                    <button
+                                        onClick={async () => {
+                                            setDuplicateLoading(true);
+                                            try {
+                                                const response = await fetch(`${API_BASE_URL}/api/application/duplicates`, {
+                                                    headers: { Authorization: `Bearer ${token}` }
+                                                });
+                                                const result = await response.json();
+                                                if (result.success) {
+                                                    setDuplicateGroups(result.duplicateGroups);
+                                                    if (result.duplicateGroups.length === 0) {
+                                                        setSuccessMsg('중복 계정이 없습니다.');
+                                                        setTimeout(() => setSuccessMsg(''), 3000);
+                                                    }
+                                                } else {
+                                                    setErrorMsg(result.message || '조회 실패');
+                                                    setTimeout(() => setErrorMsg(''), 3000);
+                                                }
+                                            } catch (error) {
+                                                setErrorMsg('중복 계정 조회에 실패했습니다.');
+                                                setTimeout(() => setErrorMsg(''), 3000);
+                                            } finally {
+                                                setDuplicateLoading(false);
+                                            }
+                                        }}
+                                        disabled={duplicateLoading}
+                                        className="px-6 py-2 rounded-lg bg-blue-500/20 text-blue-400 hover:bg-blue-500/30 transition-all font-semibold disabled:opacity-50 disabled:cursor-not-allowed mb-4"
+                                    >
+                                        {duplicateLoading ? '검색 중...' : '중복 계정 검색'}
+                                    </button>
+
+                                    {duplicateGroups.length > 0 && (
+                                        <div className="space-y-4 mt-4">
+                                            {duplicateGroups.map((group: any, groupIdx: number) => {
+                                                const realUsers = group.users.filter((u: any) => !u.studentId.startsWith('ADMIN_CREATED_'));
+                                                const tempUsers = group.users.filter((u: any) => u.studentId.startsWith('ADMIN_CREATED_'));
+
+                                                return (
+                                                    <div key={groupIdx} className="p-4 rounded-lg bg-white/5 border border-yellow-500/20">
+                                                        <div className="flex items-center justify-between mb-3">
+                                                            <h4 className="text-white font-semibold">{group.name} <span className="text-slate-400 text-sm">({group.count}개 계정)</span></h4>
+                                                        </div>
+                                                        <div className="space-y-2">
+                                                            {group.users.map((user: any) => (
+                                                                <div key={user.id} className={`p-3 rounded-lg text-sm ${user.studentId.startsWith('ADMIN_CREATED_') ? 'bg-red-500/10 border border-red-500/20' : 'bg-green-500/10 border border-green-500/20'}`}>
+                                                                    <div className="flex items-center justify-between">
+                                                                        <div>
+                                                                            <span className={`font-mono text-xs ${user.studentId.startsWith('ADMIN_CREATED_') ? 'text-red-400' : 'text-green-400'}`}>
+                                                                                {user.studentId.startsWith('ADMIN_CREATED_') ? '임시 계정' : user.studentId}
+                                                                            </span>
+                                                                            <span className="text-slate-400 ml-2">역할: {user.role}</span>
+                                                                            {user.application && (
+                                                                                <span className="text-slate-400 ml-2">
+                                                                                    지원서: {user.application.status} ({user.application.track})
+                                                                                    {user.application.phoneLastDigits && ` / 전화: ****${user.application.phoneLastDigits}`}
+                                                                                </span>
+                                                                            )}
+                                                                            {!user.application && <span className="text-slate-500 ml-2">지원서 없음</span>}
+                                                                        </div>
+                                                                    </div>
+                                                                </div>
+                                                            ))}
+                                                        </div>
+                                                        {tempUsers.length > 0 && realUsers.length > 0 && (
+                                                            <div className="mt-3">
+                                                                {tempUsers.map((tempUser: any) => (
+                                                                    <button
+                                                                        key={tempUser.id}
+                                                                        onClick={async () => {
+                                                                            const target = realUsers[0];
+                                                                            if (!confirm(`"${tempUser.name}" 임시 계정을 "${target.studentId}" 계정으로 병합하시겠습니까?\n\n임시 계정의 지원서와 출석 기록이 이관되고, 임시 계정은 삭제됩니다.`)) return;
+                                                                            setMergeLoading(tempUser.id);
+                                                                            try {
+                                                                                const response = await fetch(`${API_BASE_URL}/api/application/merge-accounts`, {
+                                                                                    method: 'POST',
+                                                                                    headers: {
+                                                                                        'Content-Type': 'application/json',
+                                                                                        Authorization: `Bearer ${token}`
+                                                                                    },
+                                                                                    body: JSON.stringify({
+                                                                                        sourceUserId: tempUser.id,
+                                                                                        targetUserId: target.id
+                                                                                    })
+                                                                                });
+                                                                                const result = await response.json();
+                                                                                if (result.success) {
+                                                                                    setSuccessMsg(result.message);
+                                                                                    setDuplicateGroups(prev => prev.map(g => g.name === group.name ? { ...g, users: g.users.filter((u: any) => u.id !== tempUser.id), count: g.count - 1 } : g).filter(g => g.count > 1));
+                                                                                    setTimeout(() => setSuccessMsg(''), 3000);
+                                                                                } else {
+                                                                                    setErrorMsg(result.message || '병합 실패');
+                                                                                    setTimeout(() => setErrorMsg(''), 3000);
+                                                                                }
+                                                                            } catch (error) {
+                                                                                setErrorMsg('계정 병합에 실패했습니다.');
+                                                                                setTimeout(() => setErrorMsg(''), 3000);
+                                                                            } finally {
+                                                                                setMergeLoading(null);
+                                                                            }
+                                                                        }}
+                                                                        disabled={mergeLoading === tempUser.id}
+                                                                        className="px-4 py-1.5 rounded-lg bg-yellow-500/20 text-yellow-400 hover:bg-yellow-500/30 transition-all text-sm font-semibold disabled:opacity-50 disabled:cursor-not-allowed mr-2 mt-1"
+                                                                    >
+                                                                        {mergeLoading === tempUser.id ? '병합 중...' : `임시 → ${realUsers[0].studentId} 병합`}
+                                                                    </button>
+                                                                ))}
+                                                            </div>
+                                                        )}
+                                                        {tempUsers.length > 0 && realUsers.length === 0 && (
+                                                            <p className="text-slate-500 text-xs mt-2">실제 학번 계정이 없어 병합할 수 없습니다. 해당 회원이 먼저 포털 인증으로 회원가입해야 합니다.</p>
+                                                        )}
+                                                    </div>
+                                                );
+                                            })}
+                                        </div>
+                                    )}
                                 </div>
                             </div>
                         )}
