@@ -13,6 +13,7 @@ import AdminPage from './features/admin/AdminPage';
 import ProjectPage from './features/project/ProjectPage';
 import TermsPage from './features/legal/TermsPage';
 import PrivacyPage from './features/legal/PrivacyPage';
+import RetroPage from './features/retro/RetroPage';
 
 // Protected Route Component
 const ProtectedRoute = ({ children, requireRole }: { children: React.ReactNode; requireRole?: 'BABY_LION' | 'ADMIN' }) => {
@@ -77,6 +78,7 @@ function App() {
             />
           </Route>
           <Route path="/login" element={<LoginPage />} />
+          <Route path="/1999" element={<RetroPage />} />
         </Routes>
       </AuthProvider>
     </BrowserRouter>

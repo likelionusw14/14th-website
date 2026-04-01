@@ -1,0 +1,509 @@
+/* 레트로 페이지 전용 CSS - .retro-page 스코핑으로 기존 사이트 영향 없음 */
+
+@keyframes retro-blink {
+  0%, 49% { opacity: 1; }
+  50%, 100% { opacity: 0; }
+}
+
+@keyframes retro-marquee {
+  from { transform: translateX(100%); }
+  to { transform: translateX(-100%); }
+}
+
+@keyframes retro-sparkle {
+  0%, 100% { opacity: 0.2; transform: scale(0.5) rotate(0deg); }
+  50% { opacity: 1; transform: scale(1.2) rotate(180deg); }
+}
+
+@keyframes retro-rainbow {
+  0% { color: #ff0000; }
+  16% { color: #ff8800; }
+  33% { color: #ffff00; }
+  50% { color: #00ff00; }
+  66% { color: #0088ff; }
+  83% { color: #8800ff; }
+  100% { color: #ff0000; }
+}
+
+@keyframes retro-construction-flash {
+  0%, 100% { background-color: #ffff00; color: #000; }
+  50% { background-color: #000; color: #ffff00; }
+}
+
+@keyframes retro-star-fall {
+  0% { transform: translateY(-10px) rotate(0deg); opacity: 0; }
+  50% { opacity: 1; }
+  100% { transform: translateY(20px) rotate(360deg); opacity: 0; }
+}
+
+.retro-page {
+  font-family: 'Gulim', 'Dotum', '굴림', '돋움', 'MS PGothic', sans-serif;
+  background-color: #009999;
+  background-image:
+    repeating-linear-gradient(
+      0deg,
+      transparent,
+      transparent 2px,
+      rgba(0, 0, 0, 0.03) 2px,
+      rgba(0, 0, 0, 0.03) 4px
+    );
+  min-height: 100vh;
+  color: #000;
+  cursor: crosshair;
+  overflow-x: hidden;
+}
+
+.retro-page * {
+  box-sizing: border-box;
+}
+
+.retro-container {
+  max-width: 800px;
+  margin: 0 auto;
+  background: #c0c0c0;
+  border: 3px outset #dfdfdf;
+  box-shadow: 4px 4px 0 #000;
+}
+
+/* 공지 배너 */
+.retro-notice {
+  background: #cc0000;
+  color: #ffff00;
+  text-align: center;
+  padding: 8px;
+  font-size: 14px;
+  font-weight: bold;
+  border-bottom: 2px solid #800000;
+  animation: retro-blink 1.5s step-end infinite;
+}
+
+/* 마퀴 */
+.retro-marquee-wrapper {
+  background: #000080;
+  overflow: hidden;
+  padding: 10px 0;
+  border-bottom: 3px ridge #808080;
+}
+
+.retro-marquee-text {
+  display: inline-block;
+  white-space: nowrap;
+  animation: retro-marquee 14s linear infinite;
+  color: #00ff00;
+  font-size: 20px;
+  font-weight: bold;
+  text-shadow: 1px 1px 0 #008000;
+}
+
+/* 타이틀 */
+.retro-title-area {
+  background: linear-gradient(180deg, #000080 0%, #0000cd 50%, #000080 100%);
+  text-align: center;
+  padding: 20px 10px;
+  border-bottom: 3px ridge #808080;
+}
+
+.retro-title {
+  font-size: 32px;
+  font-weight: bold;
+  color: #ffff00;
+  text-shadow: 2px 2px 0 #ff0000, 4px 4px 0 #000;
+  letter-spacing: 2px;
+}
+
+.retro-subtitle {
+  font-size: 14px;
+  color: #00ffff;
+  margin-top: 5px;
+}
+
+/* Under Construction */
+.retro-construction {
+  text-align: center;
+  padding: 10px;
+  animation: retro-construction-flash 0.8s step-end infinite;
+  font-size: 18px;
+  font-weight: bold;
+  border: 3px double #808080;
+  margin: 10px;
+}
+
+/* 네비게이션 */
+.retro-nav {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 4px;
+  padding: 8px;
+  background: #c0c0c0;
+  border-bottom: 2px groove #808080;
+}
+
+.retro-nav-btn {
+  background: #c0c0c0;
+  border: 2px outset #dfdfdf;
+  padding: 4px 12px;
+  font-family: 'Gulim', '굴림', sans-serif;
+  font-size: 12px;
+  font-weight: bold;
+  cursor: pointer;
+  color: #000;
+  text-decoration: none;
+}
+
+.retro-nav-btn:hover {
+  background: #a0a0a0;
+}
+
+.retro-nav-btn:active {
+  border-style: inset;
+}
+
+/* 히트 카운터 */
+.retro-hit-counter {
+  text-align: center;
+  padding: 10px;
+  font-size: 12px;
+  color: #000;
+}
+
+.retro-hit-digits {
+  display: inline-flex;
+  background: #000;
+  border: 2px inset #808080;
+  padding: 2px;
+}
+
+.retro-hit-digit {
+  background: #001100;
+  color: #00ff00;
+  font-family: 'Courier New', monospace;
+  font-size: 18px;
+  font-weight: bold;
+  padding: 2px 5px;
+  border: 1px solid #003300;
+}
+
+/* 콘텐츠 영역 */
+.retro-content {
+  display: flex;
+  gap: 0;
+  border-top: 2px groove #808080;
+}
+
+.retro-sidebar {
+  width: 180px;
+  min-width: 180px;
+  background: #ffffcc;
+  border-right: 2px groove #808080;
+  padding: 10px;
+  font-size: 12px;
+}
+
+.retro-sidebar-title {
+  background: #000080;
+  color: #fff;
+  padding: 4px 8px;
+  font-weight: bold;
+  font-size: 13px;
+  margin-bottom: 8px;
+}
+
+.retro-sidebar ul {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.retro-sidebar li {
+  padding: 3px 0;
+}
+
+.retro-sidebar li::before {
+  content: ">";
+  color: #ff0000;
+  margin-right: 4px;
+}
+
+.retro-sidebar a {
+  color: #0000ff;
+  text-decoration: underline;
+  font-size: 12px;
+}
+
+.retro-main {
+  flex: 1;
+  padding: 15px;
+  background: #fff;
+  min-height: 400px;
+}
+
+/* 방명록 */
+.retro-guestbook {
+  padding: 15px;
+  background: #fff;
+  border-top: 2px groove #808080;
+}
+
+.retro-guestbook-title {
+  background: #000080;
+  color: #ffff00;
+  padding: 6px 12px;
+  font-size: 16px;
+  font-weight: bold;
+  text-align: center;
+  margin-bottom: 12px;
+  border: 2px outset #4040c0;
+}
+
+.retro-guestbook-form {
+  background: #e8e8e8;
+  border: 2px inset #808080;
+  padding: 12px;
+  margin-bottom: 15px;
+}
+
+.retro-form-row {
+  display: flex;
+  align-items: center;
+  margin-bottom: 8px;
+  gap: 8px;
+}
+
+.retro-form-label {
+  font-size: 12px;
+  font-weight: bold;
+  min-width: 60px;
+}
+
+.retro-form-input {
+  font-family: 'Gulim', '굴림', sans-serif;
+  font-size: 12px;
+  border: 2px inset #808080;
+  padding: 3px 6px;
+  background: #fff;
+  flex: 1;
+}
+
+.retro-form-textarea {
+  font-family: 'Gulim', '굴림', sans-serif;
+  font-size: 12px;
+  border: 2px inset #808080;
+  padding: 3px 6px;
+  background: #fff;
+  width: 100%;
+  resize: vertical;
+  min-height: 60px;
+}
+
+.retro-form-submit {
+  background: #c0c0c0;
+  border: 2px outset #dfdfdf;
+  padding: 4px 20px;
+  font-family: 'Gulim', '굴림', sans-serif;
+  font-size: 12px;
+  font-weight: bold;
+  cursor: pointer;
+}
+
+.retro-form-submit:active {
+  border-style: inset;
+}
+
+.retro-form-submit:disabled {
+  color: #808080;
+  cursor: not-allowed;
+}
+
+/* 방명록 엔트리 */
+.retro-entry {
+  background: #ffffcc;
+  border: 2px inset #808080;
+  padding: 10px;
+  margin-bottom: 8px;
+}
+
+.retro-entry-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 6px;
+  border-bottom: 1px dashed #808080;
+  padding-bottom: 4px;
+}
+
+.retro-entry-nickname {
+  font-weight: bold;
+  color: #0000ff;
+  font-size: 13px;
+}
+
+.retro-entry-date {
+  font-size: 11px;
+  color: #808080;
+}
+
+.retro-entry-content {
+  font-size: 13px;
+  line-height: 1.5;
+  margin-bottom: 6px;
+  word-break: break-word;
+}
+
+.retro-entry-footer {
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  gap: 6px;
+}
+
+.retro-like-btn {
+  background: #c0c0c0;
+  border: 2px outset #dfdfdf;
+  padding: 2px 10px;
+  font-family: 'Gulim', '굴림', sans-serif;
+  font-size: 11px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.retro-like-btn:active {
+  border-style: inset;
+}
+
+.retro-like-btn.liked {
+  background: #ffcccc;
+  border-style: inset;
+  cursor: default;
+}
+
+.retro-like-count {
+  font-weight: bold;
+  color: #cc0000;
+}
+
+/* 페이지네이션 */
+.retro-pagination {
+  text-align: center;
+  padding: 10px;
+  font-size: 12px;
+}
+
+.retro-pagination button {
+  background: #c0c0c0;
+  border: 2px outset #dfdfdf;
+  padding: 2px 10px;
+  font-family: 'Gulim', '굴림', sans-serif;
+  font-size: 12px;
+  cursor: pointer;
+  margin: 0 4px;
+}
+
+.retro-pagination button:disabled {
+  color: #808080;
+  cursor: not-allowed;
+}
+
+/* 푸터 */
+.retro-footer {
+  background: #000080;
+  color: #c0c0c0;
+  text-align: center;
+  padding: 15px;
+  font-size: 11px;
+  border-top: 3px ridge #808080;
+}
+
+.retro-footer a {
+  color: #00ffff;
+}
+
+.retro-ie-badge {
+  display: inline-block;
+  background: #fff;
+  border: 2px outset #808080;
+  padding: 4px 10px;
+  font-size: 11px;
+  color: #000;
+  margin: 8px 0;
+}
+
+.retro-modern-link {
+  display: block;
+  text-align: center;
+  padding: 15px;
+  background: #ffffcc;
+  font-size: 14px;
+  border-top: 2px groove #808080;
+}
+
+.retro-modern-link a {
+  color: #0000ff;
+  text-decoration: underline;
+  font-weight: bold;
+}
+
+.retro-modern-link a:hover {
+  color: #ff0000;
+}
+
+/* 별 장식 */
+.retro-sparkle {
+  position: fixed;
+  pointer-events: none;
+  font-size: 20px;
+  animation: retro-sparkle 2s ease-in-out infinite;
+  z-index: 9999;
+  user-select: none;
+}
+
+/* 레인보우 텍스트 */
+.retro-rainbow {
+  animation: retro-rainbow 3s linear infinite;
+}
+
+/* 환영 메시지 섹션 */
+.retro-welcome {
+  padding: 15px;
+  font-size: 13px;
+  line-height: 1.8;
+}
+
+.retro-welcome p {
+  margin-bottom: 8px;
+}
+
+.retro-hr {
+  border: none;
+  border-top: 2px groove #808080;
+  margin: 10px 0;
+}
+
+/* 에러 메시지 */
+.retro-error {
+  background: #ffcccc;
+  border: 2px inset #808080;
+  padding: 6px 10px;
+  font-size: 12px;
+  color: #cc0000;
+  text-align: center;
+  margin-bottom: 8px;
+}
+
+/* 반응형 - 모바일에서 사이드바 숨김 */
+@media (max-width: 600px) {
+  .retro-sidebar {
+    display: none;
+  }
+
+  .retro-title {
+    font-size: 22px;
+  }
+
+  .retro-form-row {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+}
