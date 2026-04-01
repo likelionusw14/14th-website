@@ -4,12 +4,14 @@ import StarBackground from '../../../shared/ui/StarBackground';
 import PortalVerificationForm from '../ui/PortalVerificationForm';
 import RegisterForm from '../ui/RegisterForm';
 import ActivateForm from '../ui/ActivateForm';
+import ResetPasswordForm from '../ui/ResetPasswordForm';
+import RelinkPortalForm from '../ui/RelinkPortalForm';
 import TermsAgreementStep from '../ui/TermsAgreementStep';
 import LoginForm from './LoginForm';
 
 const LoginPage = () => {
     const [searchParams] = useSearchParams();
-    const [view, setView] = useState<'LOGIN' | 'TERMS' | 'VERIFY' | 'REGISTER' | 'ACTIVATE_VERIFY' | 'ACTIVATE_REGISTER'>('LOGIN');
+    const [view, setView] = useState<'LOGIN' | 'TERMS' | 'VERIFY' | 'REGISTER' | 'ACTIVATE_VERIFY' | 'ACTIVATE_REGISTER' | 'RESET_PASSWORD' | 'RELINK_PORTAL'>('LOGIN');
     const [verifiedData, setVerifiedData] = useState<{ token: string; studentId: string; name: string } | null>(null);
     const [activationInfo, setActivationInfo] = useState<{ name: string; phoneLastDigits: string } | null>(null);
 
@@ -46,7 +48,9 @@ const LoginPage = () => {
             <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] bg-blue-900/20 rounded-full blur-[120px] pointer-events-none" />
 
             <div className="w-full max-w-md relative z-10 glass p-8 rounded-3xl border border-white/10 shadow-2xl">
-                {view === 'LOGIN' && <LoginForm onRegisterClick={() => setView('TERMS')} />}
+                {view === 'LOGIN' && <LoginForm onRegisterClick={() => setView('TERMS')} onResetClick={() => setView('RESET_PASSWORD')} onRelinkNeeded={() => setView('RELINK_PORTAL')} />}
+                {view === 'RESET_PASSWORD' && <ResetPasswordForm onSuccess={() => setView('LOGIN')} />}
+                {view === 'RELINK_PORTAL' && <RelinkPortalForm />}
                 {view === 'TERMS' && (
                     <TermsAgreementStep
                         onAgree={handleTermsAgreed}

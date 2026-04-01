@@ -106,18 +106,27 @@ model ApplicationSettings {
 
 model InterviewSettings {
   id              Int      @id @default(autoincrement())
-  
+
   // 면접 가능 날짜들 (JSON 배열: ["2026-02-23", "2026-02-24", "2026-02-25"])
   availableDates  String   @default("[]")
-  
+
   // 면접 시간대
   startTime       String   @default("09:00")
   endTime         String   @default("16:00")
-  
+
   // 면접 시간 간격 (분 단위)
   intervalMinutes Int      @default(20)
-  
+
   createdAt       DateTime @default(now())
   updatedAt       DateTime @updatedAt
+}
+
+model Guestbook {
+  id        Int      @id @default(autoincrement())
+  nickname  String
+  content   String
+  likes     Int      @default(0)
+  ipHash    String?
+  createdAt DateTime @default(now())
 }
 

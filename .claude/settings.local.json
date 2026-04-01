@@ -1,7 +1,9 @@
 {
   "permissions": {
     "allow": [
-      "Bash(npx tsc:*)"
+      "Bash(npx tsc:*)",
+      "Bash(xargs grep:*)",
+      "Bash(grep -r \"연동\\\\|not linked\\\\|activated\\\\|activate\" '/c/Users/FiatLux/Documents/수원대학교/FLAG 동아리/LikeLionSuwonSite/src' --include=*.tsx --include=*.ts)"
     ]
   }
 }

@@ -7,7 +7,7 @@ import { Input } from '@/shared/ui/shadcn/input';
 import { Button } from '@/shared/ui/shadcn/button';
 import { Label } from '@/shared/ui/shadcn/label';
 
-const LoginForm = ({ onRegisterClick }: { onRegisterClick: () => void }) => {
+const LoginForm = ({ onRegisterClick, onResetClick, onRelinkNeeded }: { onRegisterClick: () => void; onResetClick: () => void; onRelinkNeeded: () => void }) => {
     const { register, handleSubmit, formState: { errors, isSubmitting } } = useForm();
     const [errorMsg, setErrorMsg] = useState('');
     const navigate = useNavigate();
@@ -25,7 +25,11 @@ const LoginForm = ({ onRegisterClick }: { onRegisterClick: () => void }) => {
 
             if (result.success) {
                 login(result.token, result.user);
-                navigate('/');
+                if (result.user.name === 'Baby Lion' || !result.user.name) {
+                    onRelinkNeeded();
+                } else {
+                    navigate('/');
+                }
             } else {
                 setErrorMsg(result.message || '로그인 실패');
             }
@@ -78,6 +82,10 @@ const LoginForm = ({ onRegisterClick }: { onRegisterClick: () => void }) => {
 
             <div className="text-center mt-4 text-sm text-slate-400">
                 계정이 없으신가요? <button type="button" onClick={onRegisterClick} className="text-comet-blue hover:underline">회원가입 (포털인증)</button>
+            </div>
+
+            <div className="text-center mt-2 text-sm text-slate-400">
+                비밀번호를 잊으셨나요? <button type="button" onClick={onResetClick} className="text-comet-blue hover:underline">비밀번호 재설정</button>
             </div>
 
             <div className="text-center mt-4 text-sm text-slate-400">

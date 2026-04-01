@@ -5,6 +5,7 @@ import authRoutes from './auth/auth.routes';
 import applicationRoutes from './application/application.routes';
 import attendanceRoutes from './attendance/attendance.routes';
 import memberRoutes from './member/member.routes';
+import guestbookRoutes from './guestbook/guestbook.routes';
 
 dotenv.config();
 
@@ -78,6 +79,7 @@ app.use('/api/auth', authRoutes);
 app.use('/api/application', applicationRoutes);
 app.use('/api/attendance', attendanceRoutes);
 app.use('/api/members', memberRoutes);
+app.use('/api/guestbook', guestbookRoutes);
 
 // SSE Log Stream
 import { logger } from './utils/logger';
